@@ -67,7 +67,10 @@ func registerSearchTools(srv *mcpsrv.MCPServer, appContainer *app.App) {
 			scopes = []string{"files:read"}
 			permission = "file_r"
 		}
-		tool := mcp.NewTool(name, mcp.WithDescription(descriptions[name]), mcp.WithRawInputSchema(searchToolSchema(name)), mcp.WithOutputSchema[searchOutput]())
+		// NewTool initializes InputSchema.Type="object"; adding a raw schema to
+		// it conflicts at marshal time. Start with the SDK's raw-schema constructor.
+		tool := mcp.NewToolWithRawSchema(name, descriptions[name], searchToolSchema(name))
+		mcp.WithOutputSchema[searchOutput]()(&tool)
 		srv.AddTool(readOnlyMCPTool(tool, appContainer.Config(), scopes...), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			if err := checkPermission(ctx, permission); err != nil {
 				return mcp.NewToolResultError(err.Error()), nil
