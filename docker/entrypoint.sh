@@ -17,4 +17,4 @@ touch storage/logs/c.log || { echo "Failed to create c.log"; exit 1; }
 mv storage/logs/c.log "storage/logs/c_$(date '+%Y%m%d%H%M%S').log" || { echo "Failed to rename log"; exit 1; }
 
 # 运行程序并记录日志到 c.log
-"/${P_NAME}/${P_BIN}" run 2>&1 | tee storage/logs/c.log
+exec "/${P_NAME}/${P_BIN}" run >> storage/logs/c.log 2>&1

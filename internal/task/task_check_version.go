@@ -6,29 +6,28 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/haierkeys/fast-note-sync-service/internal/app"
 	pkgapp "github.com/haierkeys/fast-note-sync-service/pkg/app"
+	"github.com/haierkeys/fast-note-sync-service/pkg/fileurl"
 	"go.uber.org/zap"
 	"golang.org/x/mod/semver"
 )
 
 const (
-	GitHubServiceReleaseURL = "https://api.github.com/repos/haierkeys/fast-note-sync-service/releases"
+	GitHubServiceReleaseURL = fileurl.ServiceReleaseAPI
 	GitHubPluginReleaseURL  = "https://api.github.com/repos/haierkeys/obsidian-fast-note-sync/releases"
-	ServiceRepoPath         = "haierkeys/fast-note-sync-service"
-	ServiceRepoURL          = "https://github.com/" + ServiceRepoPath
+	ServiceRepoPath         = fileurl.ServiceRepoPath
+	ServiceRepoURL          = fileurl.ServiceRepoURL
 	PluginRepoPath          = "haierkeys/obsidian-fast-note-sync"
 	PluginRepoURL           = "https://github.com/" + PluginRepoPath
 
-	CNBServiceReleaseURL = "https://api.cnb.cool/" + ServiceRepoPath + "/-/releases"
-	CNBPluginReleaseURL  = "https://api.cnb.cool/" + PluginRepoPath + "/-/releases"
-	CNBServiceURL        = "https://cnb.cool/" + ServiceRepoPath
-	CNBPluginURL         = "https://cnb.cool/" + PluginRepoPath
-	CNBServiceToken      = "58tjez3744HL9Z10cRaCHdeEPhK"
-	CNBPluginToken       = "9pFNKcjlej36e0w6MHKT6YMn53G"
+	CNBPluginReleaseURL = "https://api.cnb.cool/" + PluginRepoPath + "/-/releases"
+	CNBPluginURL        = "https://cnb.cool/" + PluginRepoPath
+	CNBPluginToken      = "9pFNKcjlej36e0w6MHKT6YMn53G"
 
 	// fetchHTTPTimeout bounds each release-list HTTP request so a hung source
 	// can't stall the whole task; the task-layer fallback then retries the other source.
@@ -50,6 +49,7 @@ type CNBRelease struct {
 }
 
 type GitHubRelease struct {
+	Draft      bool          `json:"draft"`
 	TagName    string        `json:"tag_name"`
 	Prerelease bool          `json:"prerelease"`
 	Body       string        `json:"body"`   // Release description (changelog) // 版本发布说明（更新日志）
@@ -86,27 +86,16 @@ func (t *CheckVersionTask) Name() string {
 }
 
 func (t *CheckVersionTask) Run(ctx context.Context) error {
-	// Primary source is decided by SourceSelector (auto probes real release
-	// endpoints, with latency-aware switching). The task-layer fallback below
-	// guarantees that even if the probe picked the wrong source, the other one
-	// is retried once before giving up.
-	// 主源由 SourceSelector 决定（auto 模式探测真实 release 接口 + 延迟感知切换）。
-	// 下方 task 层 fallback 保证即使探测选错源，也会回退另一源重试一次。
-	githubFirst := t.app.IsPullFromGitHub()
-
-	// Service releases (with fallback)
-	// 服务端版本（带回退）
-	serviceUsedGitHub, serviceReleases, serviceLink, serviceChangelog, serviceChangelogContent, err :=
-		t.fetchReleasesWithFallback(ctx, GitHubServiceReleaseURL, CNBServiceReleaseURL, CNBServiceToken, true, githubFirst)
+	// Service releases never use plugin mirror selection or fallback.
+	serviceReleases, err := t.fetchGitHubReleasesCtx(ctx, GitHubServiceReleaseURL)
 	if err != nil {
 		return fmt.Errorf("fetch service releases: %w", err)
 	}
+	serviceLink, serviceChangelog, serviceChangelogContent := buildLinks(serviceReleases, true, true)
 
-	// Plugin releases (prefer the same source the service fetch actually used,
-	// so service & plugin versions come from the same mirror)
-	// 插件版本（优先用服务端实际命中的源，保证服务端与插件版本来自同一镜像）
+	// Plugin checks remain upstream because the plugin fork has no releases.
 	pluginReleases, pluginLink, pluginChangelog, pluginChangelogContent, perr :=
-		t.fetchReleasesWithFallbackLinksOnly(ctx, GitHubPluginReleaseURL, CNBPluginReleaseURL, CNBPluginToken, false, serviceUsedGitHub)
+		t.fetchReleasesWithFallbackLinksOnly(ctx, GitHubPluginReleaseURL, CNBPluginReleaseURL, CNBPluginToken, false, true)
 	if perr != nil {
 		// Plugin version is best-effort; don't fail the whole task if only plugin fetch errors.
 		// 插件版本尽力而为：仅插件抓取失败不应导致整个任务失败。
@@ -136,16 +125,9 @@ func (t *CheckVersionTask) Run(ctx context.Context) error {
 	}
 
 	info := pkgapp.CheckVersionInfo{
-		// GithubAvailable now means "the source the version info was ACTUALLY
-		// fetched from is GitHub". This keeps the upgrade download URL (decided
-		// from this field in handler_admin_control.Upgrade) consistent with the
-		// source that produced the version data, fixing the old probe/upgrade
-		// mismatch where the probe said GitHub but the download went 404.
-		// GithubAvailable 现在表示「版本信息实际命中的源是 GitHub」，使升级下载地址
-		// （在 handler_admin_control.Upgrade 中由本字段决定）与产生版本数据的源一致，
-		// 修复过去「探测说 GitHub 但下载 404」的不一致。
-		GithubAvailable:                  serviceUsedGitHub,
+		GithubAvailable:                  true,
 		VersionNewName:                   serviceLatest,
+		VersionNewTag:                    latestTag(serviceReleases),
 		VersionIsNew:                     serviceLatest != "" && semver.Compare(serviceLatest, currentServiceVersion) > 0,
 		VersionNewLink:                   serviceLink,
 		VersionNewChangelog:              serviceChangelog,
@@ -174,6 +156,11 @@ func (t *CheckVersionTask) Run(ctx context.Context) error {
 func (t *CheckVersionTask) fetchReleasesWithFallback(
 	ctx context.Context, ghURL, cnbURL, cnbToken string, isService, githubFirst bool,
 ) (usedGitHub bool, releases []pkgapp.HistoricalVersion, link, changelogLink, changelogContent string, err error) {
+	if isService {
+		releases, err = t.fetchGitHubReleasesCtx(ctx, GitHubServiceReleaseURL)
+		link, changelogLink, changelogContent = buildLinks(releases, true, true)
+		return true, releases, link, changelogLink, changelogContent, err
+	}
 	releases, link, changelogLink, changelogContent, usedGitHub, err = t.tryFetch(ctx, ghURL, cnbURL, cnbToken, isService, githubFirst)
 	if err == nil && len(releases) > 0 {
 		return usedGitHub, releases, link, changelogLink, changelogContent, nil
@@ -240,18 +227,19 @@ func buildLinks(releases []pkgapp.HistoricalVersion, isService, fromGitHub bool)
 	latest := releases[0].Version
 	changelogContent = releases[0].ChangelogContent
 	latestClean := strings.TrimPrefix(latest, "v")
-	if fromGitHub {
-		base := ServiceRepoURL
-		if !isService {
-			base = PluginRepoURL
+	if isService {
+		tag := latestTag(releases)
+		if _, err := fileurl.ServiceVersion(tag); err != nil {
+			return "", "", ""
 		}
+		return ServiceRepoURL + "/releases/tag/" + tag, ServiceRepoURL + "/releases/download/" + tag + "/changelog.txt", changelogContent
+	}
+	if fromGitHub {
+		base := PluginRepoURL
 		link = base + "/releases/tag/" + latestClean
 		changelogLink = base + "/releases/download/" + latestClean + "/changelog.txt"
 	} else {
-		base := CNBServiceURL
-		if !isService {
-			base = CNBPluginURL
-		}
+		base := CNBPluginURL
 		link = base + "/-/releases/tag/" + latestClean
 		changelogLink = base + "/-/releases/download/" + latestClean + "/changelog.txt"
 	}
@@ -301,18 +289,41 @@ func (t *CheckVersionTask) fetchGitHubReleasesCtx(ctx context.Context, url strin
 	releaseChannel := t.app.Config().App.PullReleaseChannel
 	var result []pkgapp.HistoricalVersion
 	for _, release := range releases {
-		if releaseChannel == "stable" && release.Prerelease {
+		if release.Draft || (releaseChannel == "stable" && release.Prerelease) {
 			continue
 		}
 		if !hasValidAssets(release.Assets) {
 			continue
 		}
+		if url == GitHubServiceReleaseURL {
+			_, fileName, err := fileurl.ServiceDownload(release.TagName, runtime.GOOS, runtime.GOARCH)
+			if err != nil {
+				continue
+			}
+			found := false
+			for _, asset := range release.Assets {
+				if asset.Name == fileName && (asset.State == "" || asset.State == "uploaded") {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
 		tagName := release.TagName
+		if _, err := fileurl.ServiceVersion(tagName); err != nil {
+			continue
+		}
+		if releaseChannel == "stable" && semver.Prerelease("v"+strings.TrimPrefix(tagName, "v")) != "" {
+			continue
+		}
 		if !strings.HasPrefix(tagName, "v") {
 			tagName = "v" + tagName
 		}
 		result = append(result, pkgapp.HistoricalVersion{
 			Version:          tagName,
+			Tag:              release.TagName,
 			ChangelogContent: release.Body,
 		})
 	}
@@ -366,11 +377,18 @@ func (t *CheckVersionTask) fetchCNBVersionCtx(ctx context.Context, url string, t
 			continue
 		}
 		tagName := release.TagName
+		if _, err := fileurl.ServiceVersion(tagName); err != nil {
+			continue
+		}
+		if releaseChannel == "stable" && semver.Prerelease("v"+strings.TrimPrefix(tagName, "v")) != "" {
+			continue
+		}
 		if !strings.HasPrefix(tagName, "v") {
 			tagName = "v" + tagName
 		}
 		result = append(result, pkgapp.HistoricalVersion{
 			Version:          tagName,
+			Tag:              release.TagName,
 			ChangelogContent: release.Body,
 		})
 	}
@@ -384,4 +402,14 @@ func (t *CheckVersionTask) LoopInterval() time.Duration {
 
 func (t *CheckVersionTask) IsStartupRun() bool {
 	return true
+}
+
+func latestTag(releases []pkgapp.HistoricalVersion) string {
+	if len(releases) == 0 {
+		return ""
+	}
+	if releases[0].Tag != "" {
+		return releases[0].Tag
+	}
+	return strings.TrimPrefix(releases[0].Version, "v")
 }

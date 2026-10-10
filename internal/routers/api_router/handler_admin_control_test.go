@@ -206,3 +206,12 @@ func TestAdminControlHandler_UpdateConfig_InvalidExpiry(t *testing.T) {
 	assertResponseCode(t, w, code.ErrorInvalidParams.Code())
 	assert.Contains(t, w.Body.String(), "webguiLoginTokenExpiry format invalid")
 }
+
+func TestAdminControlHandler_Upgrade_RejectsUnsafeLatestTag(t *testing.T) {
+	handler, a, _ := newTestAdminHandler()
+	a.SetCheckVersionInfo(pkgapp.CheckVersionInfo{VersionIsNew: true, VersionNewName: "999.0.0", VersionNewTag: "../../evil"})
+	c, w := newAdminTestContext("GET", "/api/admin/upgrade?version=latest", "", 1)
+	handler.Upgrade(c)
+	assertResponseCode(t, w, code.ErrorInvalidParams.Code())
+	assert.Contains(t, w.Body.String(), "invalid version format")
+}

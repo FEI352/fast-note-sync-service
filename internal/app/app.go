@@ -232,6 +232,23 @@ func (a *App) CheckVersion(pluginVersion string) pkgapp.CheckVersionInfo {
 	return cv
 }
 
+// ServiceReleaseTag resolves displayed versions to exact release tags for downloads.
+func (a *App) ServiceReleaseTag(version string) string {
+	a.checkVersionMu.RLock()
+	defer a.checkVersionMu.RUnlock()
+	clean := strings.TrimPrefix(version, "v")
+	for _, release := range a.serviceReleases {
+		if strings.TrimPrefix(release.Version, "v") == clean && release.Tag != "" {
+			return release.Tag
+		}
+	}
+	if strings.TrimPrefix(a.checkVersion.VersionNewName, "v") == clean && a.checkVersion.VersionNewTag != "" {
+		return a.checkVersion.VersionNewTag
+	}
+	// This fork's release pipeline publishes v-prefixed tags.
+	return "v" + clean
+}
+
 // SetCheckVersionInfo sets version check information
 // SetCheckVersionInfo 设置版本检查信息
 func (a *App) SetCheckVersionInfo(info pkgapp.CheckVersionInfo) {
@@ -647,8 +664,6 @@ func (a *App) Shutdown(ctx context.Context) error {
 			a.logger.Warn("Share service shutdown error", zap.Error(err))
 		}
 	}
-
-
 
 	// 0.2 Shutdown CloudflareService
 	if a.CloudflareService != nil {

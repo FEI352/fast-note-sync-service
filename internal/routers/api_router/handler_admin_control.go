@@ -22,6 +22,7 @@ import (
 	"github.com/haierkeys/fast-note-sync-service/internal/dto"
 	pkgapp "github.com/haierkeys/fast-note-sync-service/pkg/app"
 	"github.com/haierkeys/fast-note-sync-service/pkg/code"
+	"github.com/haierkeys/fast-note-sync-service/pkg/fileurl"
 	"github.com/haierkeys/fast-note-sync-service/pkg/util"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/host"
@@ -29,7 +30,6 @@ import (
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/shirou/gopsutil/v4/process"
 	"go.uber.org/zap"
-	"golang.org/x/mod/semver"
 )
 
 // AdminControlHandler Admin control configuration API router handler
@@ -1138,59 +1138,29 @@ func (h *AdminControlHandler) Upgrade(c *gin.Context) {
 		return
 	}
 
-	// Filter and validate Version parameter
-	// 过滤并验证 Version 参数
-	if upgradeReq.Version != "latest" {
-		v := upgradeReq.Version
-		if !strings.HasPrefix(v, "v") {
-			v = "v" + v
-		}
-		if !semver.IsValid(v) {
-			h.App.Logger().Warn("apiRouter.AdminControl.Upgrade invalid version format", zap.String("version", upgradeReq.Version))
-			response.ToResponse(code.ErrorInvalidParams.WithDetails("invalid version format"))
-			return
-		}
-	}
-
+	// Validate both explicit requests and the cached latest release tag.
 	checkInfo := h.App.CheckVersion("")
-	version := ""
-
-	if upgradeReq.Version == "latest" {
+	version := upgradeReq.Version
+	if version == "latest" {
 		if !checkInfo.VersionIsNew {
 			response.ToResponse(code.Success.WithDetails("Current version is already up to date"))
 			return
 		}
-		version = checkInfo.VersionNewName
+		version = checkInfo.VersionNewTag
+		if version == "" {
+			version = checkInfo.VersionNewName
+		}
 	} else {
-		version = upgradeReq.Version
+		// Clients display versions without v; resolve every cached release's exact tag.
+		version = h.App.ServiceReleaseTag(version)
 	}
-
+	goos, goarch := runtime.GOOS, runtime.GOARCH
+	downloadURL, fileName, err := fileurl.ServiceDownload(version, goos, goarch)
+	if err != nil {
+		response.ToResponse(code.ErrorInvalidParams.WithDetails(err.Error()))
+		return
+	}
 	versionRaw := strings.TrimPrefix(version, "v")
-
-	// Determine download URL
-	// At upgrade time, probe both sources in auto mode to pick the best one
-	// rather than relying on the cached background-task result.
-	// 确定下载地址：auto 模式在升级时主动探测两源，不依赖后台任务缓存。
-	useGitHub := checkInfo.GithubAvailable
-	if cfg.App.PullSource == "auto" {
-		snap := h.App.SourceSelector().Probe(c.Request.Context())
-		useGitHub = snap.UseGitHub
-	}
-
-	goos := runtime.GOOS
-	goarch := runtime.GOARCH
-
-	// Example: fast-note-sync-service-2.0.10-linux-amd64.tar.gz
-	fileName := fmt.Sprintf("fast-note-sync-service-%s-%s-%s.tar.gz", versionRaw, goos, goarch)
-	downloadURL := ""
-	if useGitHub {
-		// GitHub releases/download/[tag]/[filename]
-		// Based on user feedback: URL should NOT have 'v' in the tag part if the tag itself doesn't have it
-		downloadURL = fmt.Sprintf("https://github.com/haierkeys/fast-note-sync-service/releases/download/%s/%s", versionRaw, fileName)
-	} else {
-		// CNB download URL format
-		downloadURL = fmt.Sprintf("https://cnb.cool/haierkeys/fast-note-sync-service/-/releases/download/%s/%s", versionRaw, fileName)
-	}
 
 	h.App.Logger().Info("Starting upgrade download", zap.String("url", downloadURL), zap.String("version", versionRaw))
 
