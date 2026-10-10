@@ -8,6 +8,7 @@ import (
 
 	"github.com/haierkeys/fast-note-sync-service/internal/app"
 	"github.com/haierkeys/fast-note-sync-service/internal/dto"
+	"github.com/haierkeys/fast-note-sync-service/internal/service"
 	pkgapp "github.com/haierkeys/fast-note-sync-service/pkg/app"
 	"github.com/haierkeys/fast-note-sync-service/pkg/util"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -181,7 +182,47 @@ func searchNoteCandidates(ctx context.Context, a *app.App, vault string, recycle
 	})
 }
 
+// indexedNoteSearch is optional so integrations without the accelerated repository
+// retain the same complete-search fallback.
+type indexedNoteSearch = service.NoteSearchService
+
+func searchIndexedNotes(ctx context.Context, source indexedNoteSearch, vault string, p searchParams) ([]searchHit, error) {
+	hits := []searchHit{}
+	var cursor int64
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		notes, next, err := source.SearchCandidates(ctx, getUIDFromContext(ctx), vault, p.Query, p.Mode, cursor, 100)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range notes {
+			h := searchHit{Vault: vault, ID: n.ID, Path: n.Path, Version: n.Version, Size: n.Size, Ctime: n.Ctime, Mtime: n.Mtime}
+			if !p.metadataMatch(h) || !searchTextMatch(p.Mode, p.Query, n.Path, n.Content) || !searchTagsMatch(n.Content, p.Tags) {
+				continue
+			}
+			if p.IncludeSnippet {
+				h.Snippet = searchSnippet(n.Content, p.Query)
+			}
+			hits = append(hits, h)
+		}
+		if next == 0 {
+			return hits, nil
+		}
+		if next <= cursor {
+			return nil, fmt.Errorf("search candidate cursor did not advance")
+		}
+		cursor = next
+	}
+}
+
 func searchNotes(ctx context.Context, a *app.App, vault string, p searchParams) ([]searchHit, error) {
+	if p.Query != "" && p.Mode != "fuzzy" {
+		if source, ok := a.NoteService.WithClient(getClientInfoFromContext(ctx)).(indexedNoteSearch); ok {
+			return searchIndexedNotes(ctx, source, vault, p)
+		}
+	}
 	notes, err := searchNoteCandidates(ctx, a, vault, false)
 	if err != nil {
 		return nil, err

@@ -231,8 +231,11 @@ func (r *noteFTSRepository) rebuildVault(ctx context.Context, uid, vaultID int64
 	for _, note := range notes {
 		folder := r.dao.GetNoteFolderPath(uid, note.ID)
 		content, exists, err := r.dao.LoadContentFromFile(folder, "content.txt")
-		if err != nil || !exists {
-			content = ""
+		if err != nil {
+			return err
+		}
+		if !exists {
+			content = note.Content // Legacy SQL bodies remain readable without migration writes.
 		}
 
 		doc := BleveNoteDoc{

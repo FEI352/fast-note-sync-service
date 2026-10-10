@@ -59,11 +59,12 @@ const defaultDBConnMinIdleBeforeEvict = 10 * time.Minute
 // Dao data access object, encapsulates database operations
 // Dao 数据访问对象，封装数据库操作
 type Dao struct {
-	Db       *gorm.DB
-	KeyDb    map[string]*dbEntry
-	ctx      context.Context
-	onceKeys sync.Map
-	mu       sync.RWMutex // protects concurrent access to KeyDb // 保护 KeyDb 的并发访问
+	Db                 *gorm.DB
+	KeyDb              map[string]*dbEntry
+	ctx                context.Context
+	onceKeys           sync.Map
+	mu                 sync.RWMutex   // protects concurrent access to KeyDb // 保护 KeyDb 的并发访问
+	literalSearchLocks [64]sync.Mutex // bounded striped locks for body writes and backfill
 
 	poolSemaphores sync.Map // map[string]*semaphore.Weighted 针对不同配置的并发控制
 
@@ -75,7 +76,7 @@ type Dao struct {
 	userConfig    *config.DatabaseConfig
 	logger        *zap.Logger
 	writeQueueMgr *writequeue.Manager
-	BleveMgr      *BleveManager       // Bleve index manager instance // Bleve 索引管理器实例
+	BleveMgr      *BleveManager // Bleve index manager instance // Bleve 索引管理器实例
 }
 
 // DaoOption option function for configuring Dao
@@ -309,15 +310,14 @@ func (d *Dao) resolveConfig(key string) config.DatabaseConfig {
 }
 
 func (d *Dao) GetOrCreateDB(key string) *gorm.DB {
-	// Use read lock to check if already exists
-	// 使用读锁检查是否已存在
-	d.mu.RLock()
+	// Cache hits also update lastUsed, so they require an exclusive lock.
+	d.mu.Lock()
 	if entry, ok := d.KeyDb[key]; ok {
 		entry.lastUsed = time.Now()
-		d.mu.RUnlock()
+		d.mu.Unlock()
 		return entry.db
 	}
-	d.mu.RUnlock()
+	d.mu.Unlock()
 
 	// Get configuration
 	// 获取配置

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/blevesearch/bleve/v2"
@@ -25,8 +26,10 @@ import (
 // noteRepository implements domain.NoteRepository interface
 // noteRepository 实现 domain.NoteRepository 接口
 type noteRepository struct {
-	dao             *Dao
-	customPrefixKey string
+	dao               *Dao
+	customPrefixKey   string
+	searchReady       sync.Map
+	searchMigrationMu sync.Mutex
 }
 
 // NewNoteRepository creates NoteRepository instance
@@ -184,16 +187,8 @@ func (r *noteRepository) fillNoteContent(uid int64, n *domain.Note) error {
 	if exists {
 		n.Content = content
 	} else if n.Content != "" {
-		// Lazy migration failed, log warning but do not block flow
-		// 懒迁移失败记录警告日志但不阻断流程
-		if err := r.dao.SaveContentToFile(folder, "content.txt", n.Content); err != nil {
-			r.dao.Logger().Warn("lazy migration: SaveContentToFile failed for note content",
-				zap.Int64(logger.FieldUID, uid),
-				zap.Int64("noteId", n.ID),
-				zap.String(logger.FieldMethod, "noteRepository.fillNoteContent"),
-				zap.Error(err),
-			)
-		}
+		// Retain the legacy SQL body until the next explicit Update writes its file.
+		// A read must not overwrite a concurrent writer with an older SQL snapshot.
 	} else {
 		// File does not exist and no content to migrate, return error to prevent data loss (treated as read failure)
 		// 文件不存在且没有可迁移的内容，返回错误以防止数据丢失（视为读取失败）
@@ -365,6 +360,12 @@ func (r *noteRepository) Create(ctx context.Context, note *domain.Note, uid int6
 		m.CreatedAt = timex.Now()
 		m.UpdatedAt = timex.Now()
 
+		searchLock := &r.dao.literalSearchLocks[uint64(uid)%64]
+		searchLock.Lock()
+		defer searchLock.Unlock()
+		if err := r.invalidateSearch(ctx, db, m.ID); err != nil {
+			return err
+		}
 		content := m.Content
 		m.Content = ""             // Do not store content in database // 不在数据库存储内容
 		m.ContentLastSnapshot = "" // Do not store snapshot in database // 不在数据库存储快照
@@ -381,6 +382,9 @@ func (r *noteRepository) Create(ctx context.Context, note *domain.Note, uid int6
 			return err
 		}
 
+		if err := r.indexLiteralNote(ctx, db, m, content); err != nil {
+			return err
+		}
 		// 更新 FTS 索引
 		r.upsertFTS(m, content, uid)
 
@@ -413,6 +417,12 @@ func (r *noteRepository) Update(ctx context.Context, note *domain.Note, uid int6
 		m.UpdatedTimestamp = timex.Now().UnixMilli()
 		m.UpdatedAt = timex.Now()
 
+		searchLock := &r.dao.literalSearchLocks[uint64(uid)%64]
+		searchLock.Lock()
+		defer searchLock.Unlock()
+		if err := r.invalidateSearch(ctx, db, m.ID); err != nil {
+			return err
+		}
 		content := m.Content
 		m.Content = "" // Do not update content in database // 不在数据库更新内容
 
@@ -450,6 +460,9 @@ func (r *noteRepository) Update(ctx context.Context, note *domain.Note, uid int6
 			return err
 		}
 
+		if err := r.indexLiteralNote(ctx, db, m, content); err != nil {
+			return err
+		}
 		// 更新 FTS 索引
 		r.upsertFTS(m, content, uid)
 
@@ -568,6 +581,9 @@ func (r *noteRepository) UpdateSnapshot(ctx context.Context, snapshot, snapshotH
 // Delete 物理删除笔记
 func (r *noteRepository) Delete(ctx context.Context, id, vaultID, uid int64) error {
 	return r.dao.ExecuteWrite(ctx, uid, r, func(db *gorm.DB) error {
+		searchLock := &r.dao.literalSearchLocks[uint64(uid)%64]
+		searchLock.Lock()
+		defer searchLock.Unlock()
 		u := r.note(uid).Note
 
 		// 在物理删除之前清理全文检索索引
@@ -578,12 +594,13 @@ func (r *noteRepository) Delete(ctx context.Context, id, vaultID, uid int64) err
 			return err
 		}
 
+		cleanupErr := r.cleanSearchIDs(ctx, db, []int64{id})
 		// Delete physical files
 		// 删除物理文件
 		folder := r.dao.GetNoteFolderPath(uid, id)
 		_ = r.dao.RemoveContentFolder(folder)
 
-		return nil
+		return cleanupErr
 	})
 }
 
@@ -591,6 +608,9 @@ func (r *noteRepository) Delete(ctx context.Context, id, vaultID, uid int64) err
 // DeletePhysicalByTime 根据时间物理删除已标记删除的笔记
 func (r *noteRepository) DeletePhysicalByTime(ctx context.Context, timestamp, uid int64) error {
 	return r.dao.ExecuteWrite(ctx, uid, r, func(db *gorm.DB) error {
+		searchLock := &r.dao.literalSearchLocks[uint64(uid)%64]
+		searchLock.Lock()
+		defer searchLock.Unlock()
 		u := r.note(uid).Note
 
 		// 先找到要删除的 ID
@@ -608,12 +628,16 @@ func (r *noteRepository) DeletePhysicalByTime(ctx context.Context, timestamp, ui
 			u.UpdatedTimestamp.Lt(timestamp),
 		).Delete()
 
-		if err == nil {
-			for _, m := range list {
-				folder := r.dao.GetNoteFolderPath(uid, m.ID)
-				_ = r.dao.RemoveContentFolder(folder)
-			}
+		if err != nil {
+			return err
 		}
+		ids := make([]int64, 0, len(list))
+		for _, m := range list {
+			ids = append(ids, m.ID)
+			folder := r.dao.GetNoteFolderPath(uid, m.ID)
+			_ = r.dao.RemoveContentFolder(folder)
+		}
+		err = r.cleanSearchIDs(ctx, db, ids)
 		return err
 	})
 }
@@ -1353,8 +1377,11 @@ func (r *noteRepository) RebuildVaultIndex(ctx context.Context, uid, vaultID int
 	for _, note := range notes {
 		folder := r.dao.GetNoteFolderPath(uid, note.ID)
 		content, exists, err := r.dao.LoadContentFromFile(folder, "content.txt")
-		if err != nil || !exists {
-			content = ""
+		if err != nil {
+			return err
+		}
+		if !exists {
+			content = note.Content // Legacy SQL bodies remain readable without migration writes.
 		}
 
 		doc := BleveNoteDoc{
@@ -1378,6 +1405,9 @@ func (r *noteRepository) RebuildVaultIndex(ctx context.Context, uid, vaultID int
 // DeleteByVaultID 物理删除仓库下的所有笔记
 func (r *noteRepository) DeleteByVaultID(ctx context.Context, vaultID, uid int64) error {
 	return r.dao.ExecuteWrite(ctx, uid, r, func(db *gorm.DB) error {
+		searchLock := &r.dao.literalSearchLocks[uint64(uid)%64]
+		searchLock.Lock()
+		defer searchLock.Unlock()
 		u := r.note(uid).Note
 
 		// 查找该仓库下的所有笔记 ID
@@ -1401,13 +1431,14 @@ func (r *noteRepository) DeleteByVaultID(ctx context.Context, vaultID, uid int64
 			return err
 		}
 
+		cleanupErr := r.cleanSearchIDs(ctx, db, ids)
 		// 删除物理文件夹
 		for _, id := range ids {
 			folder := r.dao.GetNoteFolderPath(uid, id)
 			_ = r.dao.RemoveContentFolder(folder)
 		}
 
-		return nil
+		return cleanupErr
 	})
 }
 
