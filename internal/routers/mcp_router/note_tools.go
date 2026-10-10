@@ -26,6 +26,8 @@ func registerNoteTools(srv *mcpsrv.MCPServer, appContainer *app.App, wss *pkgapp
 		mcp.WithString("vault", mcp.Description("Vault name. Omitting this or providing 'default' will use the client-configured default vault.")),
 		mcp.WithString("keyword", mcp.Description("Search keyword")),
 		mcp.WithString("searchMode", mcp.Description("Where to match the keyword: 'path' (default) searches note paths and filenames; 'content' searches inside note bodies using full-text search.")),
+		mcp.WithNumber("page", mcp.Description("Page number, starting at 1")),
+		mcp.WithNumber("pageSize", mcp.Description("Items per page, maximum 100; default 100")),
 		mcp.WithOutputSchema[mcpNoteListOutput](),
 	)
 	srv.AddTool(readOnlyMCPTool(toolListNotes, cfg, "notes:read"), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -44,11 +46,11 @@ func registerNoteTools(srv *mcpsrv.MCPServer, appContainer *app.App, wss *pkgapp
 		keyword, _ := args["keyword"].(string)
 		searchMode, _ := args["searchMode"].(string)
 
-		pager := &pkgapp.Pager{
-			Page:     pkgapp.GetPage(1),
-			PageSize: pkgapp.GetPageSize(100),
+		pager, err := legacyPager(args)
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
 		}
-		notes, _, err := noteSvc.WithClient(getClientInfoFromContext(ctx)).List(ctx, uid, &dto.NoteListRequest{
+		notes, total, err := noteSvc.WithClient(getClientInfoFromContext(ctx)).List(ctx, uid, &dto.NoteListRequest{
 			Vault:      vault,
 			Keyword:    keyword,
 			SearchMode: searchMode,
@@ -67,9 +69,10 @@ func registerNoteTools(srv *mcpsrv.MCPServer, appContainer *app.App, wss *pkgapp
 			mcpNotes[i] = n.ToMcpNoteNoContentDTO()
 		}
 		return mcp.NewToolResultStructured(mcpNoteListOutput{
-			Vault: vault,
-			Count: len(notes),
-			Notes: mcpNotes,
+			legacyPagination: legacyPageOutput(pager, total),
+			Vault:            vault,
+			Count:            len(notes),
+			Notes:            mcpNotes,
 		}, resStr), nil
 	})
 

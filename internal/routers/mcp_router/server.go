@@ -37,7 +37,7 @@ func getClientInfoFromContext(ctx context.Context) (string, string, string) {
 func getDefaultVaultName(ctx context.Context, appContainer *app.App) string {
 	// 1. From context (Header X-Default-Vault-Name)
 	if val := ctx.Value("default_vault_name"); val != nil {
-		if name, ok := val.(string); ok && name != "" {
+		if name, ok := val.(string); ok && name != "" && checkVaultAccess(ctx, name) == nil {
 			return name
 		}
 	}
@@ -47,8 +47,12 @@ func getDefaultVaultName(ctx context.Context, appContainer *app.App) string {
 	// 2. From user settings (placeholder, assuming there might be a default vault setting)
 	// We can try to list vaults and pick the first one as a fallback for now
 	vaults, err := appContainer.VaultService.List(ctx, uid)
-	if err == nil && len(vaults) > 0 {
-		return vaults[0].Name
+	if err == nil {
+		for _, vault := range vaults {
+			if checkVaultAccess(ctx, vault.Name) == nil {
+				return vault.Name
+			}
+		}
 	}
 
 	return "Default"
@@ -92,6 +96,7 @@ func NewMCPServer(appContainer *app.App, wss *pkgapp.WebsocketServer) *mcpsrv.MC
 	srv := mcpsrv.NewMCPServer(
 		"fast-note-sync-service",
 		appContainer.Version().Version,
+		mcpsrv.WithHooks(consolidatedDiscoveryHooks()),
 	)
 
 	// Note Tools
@@ -105,6 +110,9 @@ func NewMCPServer(appContainer *app.App, wss *pkgapp.WebsocketServer) *mcpsrv.MC
 
 	// Vault Tools
 	registerVaultTools(srv, appContainer)
+	registerSearchTools(srv, appContainer)
+	registerConsolidatedTools(srv, appContainer)
+	registerCompatibilityAliases(srv)
 
 	return srv
 }

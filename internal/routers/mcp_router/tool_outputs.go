@@ -3,6 +3,7 @@ package mcp_router
 import "github.com/haierkeys/fast-note-sync-service/internal/dto"
 
 type mcpNoteListOutput struct {
+	legacyPagination
 	Vault string                     `json:"vault"`
 	Count int                        `json:"count"`
 	Notes []*dto.McpNoteNoContentDTO `json:"notes"`
@@ -40,6 +41,7 @@ type mcpNoteLinksOutput struct {
 }
 
 type mcpFileListOutput struct {
+	legacyPagination
 	Vault string            `json:"vault"`
 	Count int               `json:"count"`
 	Files []*dto.McpFileDTO `json:"files"`
