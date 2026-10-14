@@ -5,7 +5,7 @@ verified: 2026-10-14 @ 4cf8ffac
 ---
 # Fast Note Sync：新人导览
 
-> **30 秒版**：Fast Note Sync 是一套自己部署的 Obsidian 笔记同步系统。你在手机上改一篇笔记，电脑上的 Obsidian 几乎同时收到；同一份笔记库还能在浏览器里管理，也能让 AI 客户端通过 MCP 直接读写。它由三个代码仓库组成：服务端（本仓库，Go）、Obsidian 插件（TypeScript）和管理后台（React）。三个仓库都 fork 自 HaierKeys 的上游项目，上游已经不再更新，这个 fork 由我继续开发。
+> **30 秒版**：Fast Note Sync 是一套自己部署的 Obsidian 笔记同步系统。你在手机上改一篇笔记，电脑上的 Obsidian 几乎同时收到；同一份笔记库还能在浏览器里管理，也能让 AI 客户端通过 MCP 直接读写。它由三个代码仓库组成：服务端（本仓库，Go）、Obsidian 插件（TypeScript）和管理后台（React）。三个仓库都源自 HaierKeys 的上游项目。上游已经不再更新，现在它们是独立开发的仓库，不再跟上游。
 
 ## 愿景与思想
 

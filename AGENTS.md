@@ -1,6 +1,6 @@
 # Fast Note Sync Service
 
-自己部署的 Obsidian 笔记同步服务端（Go）：多端实时同步，外加管理后台、REST API 和给 AI 用的 MCP 接口。fork 自 haierkeys/fast-note-sync-service，上游已停更。
+自己部署的 Obsidian 笔记同步服务端（Go）：多端实时同步，外加管理后台、REST API 和给 AI 用的 MCP 接口。源自 haierkeys/fast-note-sync-service，上游已停更；本仓库独立开发，不再跟上游。
 
 ## 地图
 - internal/routers/：三种入口。websocket_router（同步）、api_router（REST）、mcp_router（MCP）
@@ -17,7 +17,7 @@
 ## 硬约束
 - 服务端的版本检查和一键升级只用本 fork 的 Release（pkg/fileurl/service_release.go），不回退到上游
 - Go module 路径保持 `github.com/haierkeys/fast-note-sync-service`，不改
-- 发版本只靠推 `v*` tag（.github/workflows/fork-release.yml）；开发和发布在 `mcp-tool-consolidation` 分支
+- 发版本只靠推 `v*` tag（.github/workflows/fork-release.yml）；开发和发布都在 master
 - 改 internal/proto/v1/sync.proto 时，插件仓库同步改
 
 ## 改动前先读
