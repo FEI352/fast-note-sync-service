@@ -6,7 +6,7 @@ IFS=$'\n\t'
 # Fast-Note Sync Service 管理脚本 (Premium)
 # ===========================================
 
-REPO="haierkeys/fast-note-sync-service"
+REPO="liu-zhengdong/fast-note-sync-service"
 BIN_BASE="fast-note-sync-service"
 INSTALL_DIR="/opt/fast-note"
 BIN_PATH="$INSTALL_DIR/$BIN_BASE"
@@ -18,12 +18,7 @@ LOG_FILE="/var/log/fast-note.log"
 TMPDIR="${TMPDIR:-/tmp}"
 GITHUB_RAW="https://github.com/$REPO/releases/download"
 GITHUB_API="https://api.github.com/repos/$REPO"
-CNB_API_BASE="https://api.cnb.cool/$REPO/-/releases"
-CNB_TOKEN="58tjez3744HL9Z10cRaCHdeEPhK"
-GITHUB_SCRIPT_URL="https://raw.githubusercontent.com/haierkeys/fast-note-sync-service/master/scripts/quest_install.sh"
-CNB_SCRIPT_URL="https://cnb.cool/haierkeys/fast-note-sync-service/-/git/raw/master/scripts/quest_install.sh?cnb"
-CNB_MIRROR_CONF="$HOME/.fast-note-mirror"
-USE_CNB=false
+GITHUB_SCRIPT_URL="https://raw.githubusercontent.com/$REPO/master/scripts/quest_install.sh"
 SUDO=""
 
 # --- Color system // 颜色系统 ---
@@ -55,9 +50,6 @@ draw_banner() {
     fi
     
     local source_display="${_BLUE}GitHub${_RESET}"
-    if [ "$USE_CNB" = "true" ]; then
-        source_display="${_MAGENTA}CNB.cool${_RESET}"
-    fi
     
     local svc_file="N/A"
     local os_type
@@ -146,12 +138,8 @@ load_lang() {
         L_MENU_6_D="将管理工具添加到全局快捷命令 fns"
         L_MENU_7="设置开机启动"
         L_MENU_7_D="配置 Systemd (Linux) 或 Launchd (macOS) 开机自启"
-        L_MENU_8="切换下载镜像"
-        L_MENU_8_D="在 GitHub 与 CNB 镜像之间切换"
         L_MENU_0="退出"
         L_MENU_L="Switch to English (切换至英文)"
-        L_SWITCH_TO_CNB="已切换至 CNB 镜像"
-        L_SWITCH_TO_GITHUB="已切换至 GitHub 镜像"
         L_SELECT="请选择"
         L_INPUT_VER="输入版本 (留空使用 latest)"
         L_INPUT_URL="输入脚本 URL (留空复制本地"
@@ -231,12 +219,8 @@ load_lang() {
         L_MENU_6_D="Add this tool to global commands (fns)"
         L_MENU_7="Set Auto-Start"
         L_MENU_7_D="Configure Systemd (Linux) or Launchd (macOS) auto-start"
-        L_MENU_8="Switch Download Mirror"
-        L_MENU_8_D="Switch between GitHub and CNB mirror"
         L_MENU_0="Quit"
         L_MENU_L="切换至中文 (Switch to Chinese)"
-        L_SWITCH_TO_CNB="Switched to CNB mirror"
-        L_SWITCH_TO_GITHUB="Switched to GitHub mirror"
         L_SELECT="Please select"
         L_INPUT_VER="Enter version (leave blank for latest)"
         L_INPUT_URL="Enter script URL (leave blank to copy local"
@@ -306,39 +290,6 @@ load_lang() {
 # Initial load // 初始加载
 load_lang "init"
 
-# Detect mirror source from script arguments or saved config
-# 从脚本参数或已保存配置中检测镜像来源
-save_mirror() {
-    echo "$USE_CNB" > "$CNB_MIRROR_CONF" 2>/dev/null || true
-}
-
-load_mirror() {
-    if [ -f "$CNB_MIRROR_CONF" ]; then
-        local saved
-        saved=$(cat "$CNB_MIRROR_CONF" 2>/dev/null | tr -d '[:space:]' || echo "false")
-        if [ "$saved" = "true" ]; then
-            USE_CNB=true
-        else
-            USE_CNB=false
-        fi
-    fi
-}
-
-parse_mirror_from_args() {
-    # Check if any argument contains '?cnb' or '--cnb' flag
-    # 检查是否含有 ?cnb 或 --cnb 参数
-    for arg in "$@"; do
-        if [[ "$arg" == *"?cnb"* ]] || [[ "$arg" == "--cnb" ]]; then
-            USE_CNB=true
-            return
-        fi
-    done
-    # No cnb flag found; load from saved config
-    # 未找到 cnb 标志，从已保存配置加载
-    load_mirror
-}
-parse_mirror_from_args "$@"
-
 # --- Version Tracking // 版本追踪 ---
 load_version() {
     INSTALLED_VER=""
@@ -395,7 +346,7 @@ _arch_map() {
     case "$a" in
         x86_64|amd64) echo "amd64" ;;
         aarch64|arm64) echo "arm64" ;;
-        armv7*|armv6*) echo "armv7" ;;
+        armv7*|armv6*) echo "armv7l" ;;
         *) echo "$a" ;;
     esac
 }
@@ -403,15 +354,6 @@ _arch_map() {
 # try get latest tag from GitHub API; fallback to "latest" string
 # 尝试从 GitHub API 获取最新 tag；失败则回退到 "latest" 字符串
 get_latest_tag() {
-    if [ "$USE_CNB" = "true" ]; then
-        local latest
-        # CNB releases API returns a list; we only need the first object's tag_name
-        # CNB releases API 返回一个列表；我们只需要第一个对象的 tag_name
-        latest=$(curl -fsSL -H "Accept: application/vnd.cnb.api+json" -H "Authorization: Bearer $CNB_TOKEN" "$CNB_API_BASE" | \
-        grep -oE '"tag_name"[[:space:]]*:[[:space:]]*"[^"]+"' | head -n1 | sed -E 's/.*"([^"]+)"$/\1/' || true)
-        if [ -n "$latest" ]; then echo "$latest"; return 0; fi
-    fi
-    
     if command -v curl >/dev/null 2>&1; then
         local latest
         latest="$(curl -fsSL "$GITHUB_API/releases/latest" 2>/dev/null | sed -nE 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' || true)"
@@ -427,45 +369,19 @@ get_latest_tag() {
 # 构建预期的资产文件名：fast-note-sync-service-<ver>-<os>-<arch>.tar.gz
 asset_name_for() {
     local ver="$1" os="$2" arch="$3"
-    # strip leading v if present in tag
-    local clean_ver="${ver#v}"
-    echo "${BIN_BASE}-${clean_ver}-${os}-${arch}.tar.gz"
+    # release tags and asset names both keep the leading v, e.g. fast-note-sync-service-v3.6.4-linux-amd64.tar.gz
+    echo "${BIN_BASE}-${ver}-${os}-${arch}.tar.gz"
 }
 
 # download using direct URL based on naming convention; if fails, try API lookup
 # 基于命名规范使用直接 URL 下载；如果失败，尝试 API 查找
 download_release_asset() {
     local ver="$1" os="$2" arch="$3"
-    local clean_ver="${ver#v}"
     local asset_name
     asset_name="$(asset_name_for "$ver" "$os" "$arch")"
     local out="$TMPDIR/$asset_name"
     
-    if [ "$USE_CNB" = "true" ]; then
-        # Resolve "latest" tag via CNB API if needed
-        # 如需要，通过 CNB API 解析 "latest" tag
-        local cnb_tag="$ver"
-        if [ "$cnb_tag" = "latest" ]; then
-            local api_tag
-            # Get the first occurrence of tag_name from the top of the list
-            # 从列表顶部获取第一个 tag_name 的出现
-            api_tag=$(curl -fsSL -H "Accept: application/vnd.cnb.api+json" -H "Authorization: Bearer $CNB_TOKEN" "$CNB_API_BASE" | \
-            grep -oE '"tag_name"[[:space:]]*:[[:space:]]*"[^"]+"' | head -n1 | sed -E 's/.*"([^"]+)"$/\1/' || true)
-            [ -n "$api_tag" ] && cnb_tag="$api_tag"
-        fi
-        
-        # Construct CNB download URL directly: https://cnb.cool/{repo}/-/releases/download/{tag}/{filename}
-        # 直接构造 CNB 下载 URL，无需解析 API JSON
-        local cnb_url="https://cnb.cool/$REPO/-/releases/download/${cnb_tag}/${asset_name}"
-        info "$L_TRY_DL (CNB): ${_BOLD}$cnb_url${_RESET}" >&2
-        if curl -fSL -o "$out" "$cnb_url"; then
-            echo "$out"
-            return 0
-        fi
-        warn "$L_DL_FAIL_API" >&2
-    fi
-    
-    local url="$GITHUB_RAW/${clean_ver}/${asset_name}"
+    local url="$GITHUB_RAW/${ver}/${asset_name}"
     
     info "$L_TRY_DL: ${_BOLD}$url${_RESET}" >&2
     if curl -fSL -o "$out" "$url"; then
@@ -785,7 +701,6 @@ full_uninstall() {
     $SUDO rm -f "$LOG_FILE" || true
     # 清理用户级配置文件 / Clean up per-user config files
     rm -f "$LANG_CONF" || true
-    rm -f "$CNB_MIRROR_CONF" || true
     
     success "$L_UN_DONE"
 }
@@ -794,15 +709,7 @@ install_self() {
     ensure_root
     local src_url="${1:-}"
     
-    # Auto-select script URL based on current mirror setting
-    # 根据当前镜像设置自动选择脚本 URL
-    if [ -z "$src_url" ]; then
-        if [ "$USE_CNB" = "true" ]; then
-            src_url="$CNB_SCRIPT_URL"
-        else
-            src_url="$GITHUB_SCRIPT_URL"
-        fi
-    fi
+    [ -z "$src_url" ] && src_url="$GITHUB_SCRIPT_URL"
     
     # 如果没有指定 URL 且当前不是通过本地文件运行（如 curl|bash 或 stdin）
     if [ -z "$src_url" ] && [ ! -f "$0" ]; then
@@ -826,19 +733,10 @@ install_self() {
     $SUDO chmod +x "$INSTALLER_SELF_PATH"
     $SUDO mkdir -p "$(dirname "$INSTALLER_LINK")"
     
-    # Create fns wrapper that passes mirror flag when USE_CNB=true
-    # 创建 fns 包装脚本，在 USE_CNB=true 时传递镜像参数
-    if [ "$USE_CNB" = "true" ]; then
-        cat <<'WRAPPER' | $SUDO tee "$INSTALLER_LINK" >/dev/null
-#!/usr/bin/env bash
-exec /opt/fast-note/fast-note-installer.sh --cnb "$@"
-WRAPPER
-    else
-        cat <<'WRAPPER' | $SUDO tee "$INSTALLER_LINK" >/dev/null
+    cat <<'WRAPPER' | $SUDO tee "$INSTALLER_LINK" >/dev/null
 #!/usr/bin/env bash
 exec /opt/fast-note/fast-note-installer.sh "$@"
 WRAPPER
-    fi
     $SUDO chmod +x "$INSTALLER_LINK"
     success "$L_INST_DONE: ${_BOLD}$INSTALLER_LINK${_RESET}"
 }
@@ -851,21 +749,6 @@ check_path() {
         warn "$(printf "$L_PATH_WARN" "$target_dir")"
         info "$(printf "$L_PATH_FIX" "$target_dir")"
     fi
-}
-
-switch_mirror() {
-    if [ "$USE_CNB" = "true" ]; then
-        USE_CNB=false
-        save_mirror
-        success "$L_SWITCH_TO_GITHUB"
-    else
-        USE_CNB=true
-        save_mirror
-        success "$L_SWITCH_TO_CNB"
-    fi
-    # Re-install fns wrapper to reflect new mirror setting
-    # 重新安装 fns 包装脚本以反映新的镜像设置
-    install_self >/dev/null 2>&1 || true
 }
 
 show_menu() {
@@ -884,14 +767,12 @@ show_menu() {
     echo -e "      ${_CYAN}${_ITALIC}${_DIM}$L_MENU_6_D${_RESET}"
     echo -e "  [7] ${_BOLD}$L_MENU_7${_RESET}"
     echo -e "      ${_CYAN}${_ITALIC}${_DIM}$L_MENU_7_D${_RESET}"
-    echo -e "  [8] ${_BOLD}$L_MENU_8${_RESET}"
-    echo -e "      ${_CYAN}${_ITALIC}${_DIM}$L_MENU_8_D${_RESET}"
     echo -e "  [L] ${_BOLD}$L_MENU_L${_RESET}"
     echo -e "  [0] ${_BOLD}$L_MENU_0${_RESET}"
     echo -e "\n${_BLUE} ================================================ ${_RESET}"
     
     while true; do
-        read -rp "  $(echo -e "${_BOLD}$L_SELECT [0-8, L]: ${_RESET}")" opt
+        read -rp "  $(echo -e "${_BOLD}$L_SELECT [0-7, L]: ${_RESET}")" opt
         case "$opt" in
             1) read -rp "  $(echo -e "${_BOLD}$L_INPUT_VER: ${_RESET}")" v; v="${v:-latest}"; install_cmd "$v";;
             2) start_service;;
@@ -900,7 +781,6 @@ show_menu() {
             5) full_uninstall;;
             6) install_self "";;
             7) enable_autostart;;
-            8) switch_mirror; load_lang; show_menu; return;;
             L|l)
                 if [ "$CURRENT_LANG" = "en" ]; then CURRENT_LANG="zh"; else CURRENT_LANG="en"; fi
                 save_lang
@@ -926,6 +806,8 @@ install_cmd() {
     step "$L_PRE_DL ${_BOLD}$ver${_RESET} ($os/$arch)..."
     if [ "$ver" = "latest" ]; then
         ver="$(get_latest_tag || echo latest)"
+    elif [[ "$ver" != v* ]]; then
+        ver="v$ver"
     fi
     tarball="$(download_release_asset "$ver" "$os" "$arch")" || { error "$L_ERR_NO_REL"; return 1; }
     install_binary_from_tar "$tarball"
@@ -944,11 +826,12 @@ install_cmd() {
 }
 
 # main dispatcher // 主调度器
-# Filter out mirror flags before dispatching // 过滤镜像标志后再调度
+# Older fns wrappers may still pass --cnb/--github; drop them before dispatching
+# 旧版 fns 包装脚本可能仍带 --cnb/--github，调度前去掉
 _dispatch_args=()
 for _arg in "$@"; do
     case "$_arg" in
-        --cnb|--github) ;;  # already handled by parse_mirror_from_args
+        --cnb|--github) ;;
         *) _dispatch_args+=("$_arg") ;;
     esac
 done

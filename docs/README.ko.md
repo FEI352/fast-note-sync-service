@@ -129,12 +129,7 @@
 시스템 환경을 자동으로 감지하고 설치 및 서비스 등록을 완료합니다.
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/haierkeys/fast-note-sync-service/master/scripts/quest_install.sh)
-```
-
-중국 지역은 Tencent `cnb.cool` 미러 소스를 사용할 수 있습니다:
-```bash
-bash <(curl -fsSL https://cnb.cool/haierkeys/fast-note-sync-service/-/git/raw/master/scripts/quest_install.sh) --cnb
+bash <(curl -fsSL https://raw.githubusercontent.com/liu-zhengdong/fast-note-sync-service/master/scripts/quest_install.sh)
 ```
 
 
@@ -144,7 +139,7 @@ bash <(curl -fsSL https://cnb.cool/haierkeys/fast-note-sync-service/-/git/raw/ma
   * 기본적으로 `/opt/fast-note`에 설치되며, `/usr/local/bin/fns`에 글로벌 바로 가기 명령 `fns`를 생성합니다.
   * Systemd (Linux) 또는 Launchd (macOS) 서비스를 구성하고 시작하여 자동 실행을 사용 설정합니다.
   * **관리 명령**: `fns [install|uninstall|start|stop|status|update|menu]`
-  * **대화형 메뉴**: 직접 `fns`를 실행하여 메뉴로 들어가며, 설치/업그레이드, 서비스 제어, 자동 실행 구성, GitHub과 CNB 미러 간 전환 등을 지원합니다.
+  * **대화형 메뉴**: 직접 `fns`를 실행하여 메뉴로 들어가며, 설치/업그레이드, 서비스 제어, 자동 실행 구성 등을 지원합니다.
 
 -----
 
@@ -154,14 +149,14 @@ bash <(curl -fsSL https://cnb.cool/haierkeys/fast-note-sync-service/-/git/raw/ma
 
 ```bash
 # 1. 이미지 풀
-docker pull haierkeys/fast-note-sync-service:latest
+docker pull ghcr.io/liu-zhengdong/fast-note-sync-service:latest
 
 # 2. 컨테이너 시작
 docker run -tid --name fast-note-sync-service \
     -p 9000:9000 \
     -v /data/fast-note-sync/storage/:/fast-note-sync/storage/ \
     -v /data/fast-note-sync/config/:/fast-note-sync/config/ \
-    haierkeys/fast-note-sync-service:latest
+    ghcr.io/liu-zhengdong/fast-note-sync-service:latest
 ```
 
 #### Docker Compose
@@ -172,7 +167,7 @@ docker-compose.yaml 파일 생성:
 version: '3'
 services:
   fast-note-sync-service:
-    image: haierkeys/fast-note-sync-service:latest
+    image: ghcr.io/liu-zhengdong/fast-note-sync-service:latest
     container_name: fast-note-sync-service
     restart: always
     ports:

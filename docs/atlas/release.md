@@ -22,7 +22,7 @@ verified: 2026-10-14 @ 4cf8ffac
 4. **检查更新。** 服务端定时查 fork 的 Release 列表（[task_check_version.go](../../internal/task/task_check_version.go)），地址写死在 [service_release.go](../../pkg/fileurl/service_release.go)。
 5. **一键升级。** 管理员在后台点升级，服务端按 tag 和当前平台下载对应的包，替换程序后重启（[handler_admin_control.go](../../internal/routers/api_router/handler_admin_control.go) 的 `Upgrade`）。GitHub 连不上时升级直接失败，不会退回去下载上游的程序。
 
-部署和切换容器镜像的步骤见运行手册 [fork-release](../runbook/fork-release.zh-CN.md)。
+新装有两种方式，都只从本仓库下载：一键安装脚本（[quest_install.sh](../../scripts/quest_install.sh)，从 master 取脚本、从 Release 取程序包，没有 CNB 镜像），或 Docker（`ghcr.io/liu-zhengdong/fast-note-sync-service`）。部署和切换容器镜像的步骤见运行手册 [fork-release](../runbook/fork-release.zh-CN.md)。
 
 ## 为什么这样设计
 
@@ -36,4 +36,4 @@ verified: 2026-10-14 @ 4cf8ffac
 - **后台一键升级只换容器里的程序，不换容器镜像**。→ 之后重建容器，又回到容器镜像里的旧程序。→ 重建容器时用对应版本的新容器镜像。
 - **两个服务端同时写同一个数据库会损坏数据**。→ 切换容器镜像时先停旧的、备份数据库，再起新的。
 - **版本号接着上游往下编**：上游最后一个 tag 是 `3.6.1`（不带 `v`），本仓库从 `v3.6.2` 开始。不再跟上游，所以不用考虑撞号。
-- **一键安装脚本还指向上游**。`scripts/quest_install.sh` 和 README 里的安装命令仍从 haierkeys 的仓库下载。→ 用它新装的是上游的旧版本，没有 MCP 这些新功能。→ 现在新装用 Docker（`docker/compose.yml` 已指向本仓库的容器镜像），或者从本仓库的 Release 下载程序包。装的是上游版本的，后台一键升级仍然只看上游，要先手动换成本仓库的程序或容器镜像一次。
+- **装了上游版本的服务端，一键升级只看上游**。→ 升不到本仓库的版本。→ 先用一键安装脚本或本仓库的容器镜像手动换一次，之后一键升级就走本仓库。

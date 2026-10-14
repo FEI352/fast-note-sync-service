@@ -130,12 +130,7 @@
 自动检测系统环境并完成安装、服务注册。
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/haierkeys/fast-note-sync-service/master/scripts/quest_install.sh)
-```
-
-中国地区可以使用腾讯 `cnb.cool` 镜像源
-```bash
-bash <(curl -fsSL https://cnb.cool/haierkeys/fast-note-sync-service/-/git/raw/master/scripts/quest_install.sh) --cnb
+bash <(curl -fsSL https://raw.githubusercontent.com/liu-zhengdong/fast-note-sync-service/master/scripts/quest_install.sh)
 ```
 
 
@@ -145,7 +140,7 @@ bash <(curl -fsSL https://cnb.cool/haierkeys/fast-note-sync-service/-/git/raw/ma
   * 默认安装至 `/opt/fast-note`，并在 `/usr/local/bin/fns` 创建全局快捷命令 `fns`。
   * 配置并启动 Systemd（Linux）或 Launchd（macOS）服务，实现开机自启。
   * **管理命令**：`fns [install|uninstall|start|stop|status|update|menu]`
-  * **交互菜单**：直接运行 `fns` 可进入交互菜单，支持安装/升级、服务控制、开机自启配置，以及在 GitHub / CNB 镜像之间切换。
+  * **交互菜单**：直接运行 `fns` 可进入交互菜单，支持安装/升级、服务控制和开机自启配置。
 
 -----
 
@@ -155,14 +150,14 @@ bash <(curl -fsSL https://cnb.cool/haierkeys/fast-note-sync-service/-/git/raw/ma
 
 ```bash
 # 1. 拉取镜像
-docker pull haierkeys/fast-note-sync-service:latest
+docker pull ghcr.io/liu-zhengdong/fast-note-sync-service:latest
 
 # 2. 启动容器
 docker run -tid --name fast-note-sync-service \
     -p 9000:9000 \
     -v /data/fast-note-sync/storage/:/fast-note-sync/storage/ \
     -v /data/fast-note-sync/config/:/fast-note-sync/config/ \
-    haierkeys/fast-note-sync-service:latest
+    ghcr.io/liu-zhengdong/fast-note-sync-service:latest
 ```
 
 #### Docker Compose
@@ -173,7 +168,7 @@ docker run -tid --name fast-note-sync-service \
 version: '3'
 services:
   fast-note-sync-service:
-    image: haierkeys/fast-note-sync-service:latest
+    image: ghcr.io/liu-zhengdong/fast-note-sync-service:latest
     container_name: fast-note-sync-service
     restart: always
     ports:

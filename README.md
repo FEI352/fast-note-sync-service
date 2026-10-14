@@ -132,12 +132,7 @@ We provide multiple installation methods. We highly recommend using the **One-cl
 Automatically detects the system environment and completes the installation and service registration.
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/haierkeys/fast-note-sync-service/master/scripts/quest_install.sh)
-```
-
-For users in China, you can use the Tencent `cnb.cool` mirror source:
-```bash
-bash <(curl -fsSL https://cnb.cool/haierkeys/fast-note-sync-service/-/git/raw/master/scripts/quest_install.sh) --cnb
+bash <(curl -fsSL https://raw.githubusercontent.com/liu-zhengdong/fast-note-sync-service/master/scripts/quest_install.sh)
 ```
 
 
@@ -147,7 +142,7 @@ bash <(curl -fsSL https://cnb.cool/haierkeys/fast-note-sync-service/-/git/raw/ma
   * Installs to `/opt/fast-note` by default and creates a global shortcut command `fns` in `/usr/local/bin/fns`.
   * Configures and starts Systemd (Linux) or Launchd (macOS) services to enable startup on boot.
   * **Management commands**: `fns [install|uninstall|start|stop|status|update|menu]`
-  * **Interactive menu**: Run `fns` directly to enter the interactive menu, supporting install/upgrade, service control, startup configuration, and switching between GitHub and CNB mirrors.
+  * **Interactive menu**: Run `fns` directly to enter the interactive menu, supporting install/upgrade, service control, and startup configuration.
 
 -----
 
@@ -157,14 +152,14 @@ bash <(curl -fsSL https://cnb.cool/haierkeys/fast-note-sync-service/-/git/raw/ma
 
 ```bash
 # 1. Pull Image
-docker pull haierkeys/fast-note-sync-service:latest
+docker pull ghcr.io/liu-zhengdong/fast-note-sync-service:latest
 
 # 2. Start Container
 docker run -tid --name fast-note-sync-service \
     -p 9000:9000 \
     -v /data/fast-note-sync/storage/:/fast-note-sync/storage/ \
     -v /data/fast-note-sync/config/:/fast-note-sync/config/ \
-    haierkeys/fast-note-sync-service:latest
+    ghcr.io/liu-zhengdong/fast-note-sync-service:latest
 ```
 
 #### Docker Compose
@@ -175,7 +170,7 @@ Create the `docker-compose.yaml` file:
 version: '3'
 services:
   fast-note-sync-service:
-    image: haierkeys/fast-note-sync-service:latest
+    image: ghcr.io/liu-zhengdong/fast-note-sync-service:latest
     container_name: fast-note-sync-service
     restart: always
     ports:
