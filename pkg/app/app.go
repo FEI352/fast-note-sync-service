@@ -46,15 +46,6 @@ type CheckVersionInfo struct {
 	PipelineWindowDown               int                 `json:"pipelineWindowDown"` // Negotiated download pipeline window; 0 = stop-and-wait // 下行流水线窗口协商值；0 = stop-and-wait
 }
 
-type SupportRecord struct {
-	Time    string `json:"time"`
-	Item    string `json:"item"`
-	Amount  string `json:"amount"`
-	Unit    string `json:"unit"`
-	Message string `json:"message"`
-	Name    string `json:"name"`
-}
-
 type Response struct {
 	Ctx *gin.Context
 }

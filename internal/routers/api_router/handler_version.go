@@ -1,7 +1,6 @@
 package api_router
 
 import (
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/haierkeys/fast-note-sync-service/internal/app"
@@ -85,36 +84,4 @@ func (h *VersionHandler) ProbeSources(c *gin.Context) {
 		Recommended:  recommended,
 		SelectedMode: h.App.SourceSelector().Mode(),
 	}))
-}
-
-// Support retrieves support records by language with pagination and sorting
-// Support 分页并排序获取指定语言的打赏记录
-// @Summary Get support records
-// @Description Get support records for the specified language with pagination and sorting
-// @Tags System
-// @Produce json
-// @Param lang query string false "Language code (default: en)"
-// @Param sortBy query string false "Sort by field (amount, time, name, item)"
-// @Param sortOrder query string false "Sort order (asc, desc)"
-// @Param page query int false "Page number"
-// @Param pageSize query int false "Page size"
-// @Success 200 {object} pkgapp.Res{data=pkgapp.ListRes} "Success"
-// @Router /api/support [get]
-func (h *VersionHandler) Support(c *gin.Context) {
-	response := pkgapp.NewResponse(c)
-	lang := strings.ToLower(c.Query("lang"))
-	if lang == "" {
-		lang = "en"
-	}
-
-	sortBy := c.Query("sortBy")
-	sortOrder := c.Query("sortOrder")
-	if sortOrder == "" {
-		sortOrder = "desc"
-	}
-
-	pager := pkgapp.NewPager(c)
-	data, total := h.App.GetSupportRecordsPage(lang, sortBy, sortOrder, pager.Page, pager.PageSize)
-
-	response.ToResponseList(code.Success, data, total)
 }

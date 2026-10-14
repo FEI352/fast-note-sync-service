@@ -16,7 +16,7 @@ verified: 2026-10-14 @ 4cf8ffac
 
 ## 怎么运转
 
-**用户。** 管理员由配置里的 `admin-uid` 指定。它是 0（默认）时不区分管理员，任何登录用户都能用管理功能；这时只有还没有任何用户时才允许注册，所以第一个注册的人就是唯一的用户。多人使用时，把 `admin-uid` 设成管理员的 UID，再用 `register-is-enable` 控制注册。
+**用户。** 管理员由配置里的 `admin-uid` 指定。它是 0（默认）时不区分管理员，任何登录用户都能用管理功能，后台登录后会弹窗建议把当前用户设为管理员；这时只有还没有任何用户时才允许注册，所以第一个注册的人就是唯一的用户。多人使用时，把 `admin-uid` 设成管理员的 UID，再用 `register-is-enable` 控制注册。
 
 **令牌。** 令牌是用 `auth-token-key` 签名的 JWT（[token.go](../../pkg/app/token.go)），同时在数据库里有一条记录，用来撤销和限权（[token_service.go](../../internal/service/token_service.go)）。一条令牌记录说明：
 

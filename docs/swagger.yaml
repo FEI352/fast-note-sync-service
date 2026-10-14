@@ -4904,46 +4904,6 @@ paths:
       summary: Validate storage connection
       tags:
       - Storage
-  /api/support:
-    get:
-      description: Get support records for the specified language with pagination
-        and sorting
-      parameters:
-      - description: 'Language code (default: en)'
-        in: query
-        name: lang
-        type: string
-      - description: Sort by field (amount, time, name, item)
-        in: query
-        name: sortBy
-        type: string
-      - description: Sort order (asc, desc)
-        in: query
-        name: sortOrder
-        type: string
-      - description: Page number
-        in: query
-        name: page
-        type: integer
-      - description: Page size
-        in: query
-        name: pageSize
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Success
-          schema:
-            allOf:
-            - $ref: '#/definitions/app.Res'
-            - properties:
-                data:
-                  $ref: '#/definitions/app.ListRes'
-              type: object
-      summary: Get support records
-      tags:
-      - System
   /api/sync-logs:
     get:
       description: Get sync log list for current user with optional type/action filters

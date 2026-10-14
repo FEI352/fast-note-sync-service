@@ -4,11 +4,7 @@ package app
 
 import (
 	"context"
-	"embed"
-	"encoding/json"
 	"fmt"
-	"io/fs"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -35,17 +31,15 @@ type App struct {
 	*Services
 
 	// App-level state and control
-	shutdownCh       chan struct{}
-	UpgradeSignal    chan string
-	StartTime        time.Time
-	wg               sync.WaitGroup
-	checkVersionMu   sync.RWMutex
-	checkVersion     pkgapp.CheckVersionInfo
-	serviceReleases  []pkgapp.HistoricalVersion // Cached filtered service releases // 缓存的已过滤服务版本列表
-	pluginReleases   []pkgapp.HistoricalVersion // Cached filtered plugin releases // 缓存的已过滤插件版本列表
-	supportRecordsMu sync.RWMutex
-	supportRecords   map[string][]pkgapp.SupportRecord
-	wss              *pkgapp.WebsocketServer // WebSocket server reference // WebSocket 服务器引用
+	shutdownCh      chan struct{}
+	UpgradeSignal   chan string
+	StartTime       time.Time
+	wg              sync.WaitGroup
+	checkVersionMu  sync.RWMutex
+	checkVersion    pkgapp.CheckVersionInfo
+	serviceReleases []pkgapp.HistoricalVersion // Cached filtered service releases // 缓存的已过滤服务版本列表
+	pluginReleases  []pkgapp.HistoricalVersion // Cached filtered plugin releases // 缓存的已过滤插件版本列表
+	wss             *pkgapp.WebsocketServer    // WebSocket server reference // WebSocket 服务器引用
 }
 
 // NewApp creates application container instance
@@ -58,9 +52,7 @@ type App struct {
 // logger: zap 日志器（必须）
 // db: database connection (required)
 // db: 数据库连接（必须）
-// efs: frontend files embedded file system
-// efs: 前端文件嵌入文件系统
-func NewApp(cfg *AppConfig, logger *zap.Logger, db *gorm.DB, efs embed.FS) (*App, error) {
+func NewApp(cfg *AppConfig, logger *zap.Logger, db *gorm.DB) (*App, error) {
 	if cfg == nil || logger == nil || db == nil {
 		return nil, fmt.Errorf("config, logger and db are required")
 	}
@@ -85,9 +77,6 @@ func NewApp(cfg *AppConfig, logger *zap.Logger, db *gorm.DB, efs embed.FS) (*App
 
 	// 4. Initialize Services (needs app context for some reason? No, it's just wiring)
 	a.Services = initServices(cfg, infra, repos, logger)
-
-	// Load support records
-	a.loadSupportRecords(efs)
 
 	logger.Info("App container initialized successfully")
 	return a, nil
@@ -424,177 +413,6 @@ func (a *App) GetSettingService(clientType, clientName, clientVersion string) se
 		return a.SettingService.WithClient(clientType, clientName, clientVersion)
 	}
 	return a.SettingService
-}
-
-// loadSupportRecords loads support records from embedded file system
-// loadSupportRecords 从嵌入文件系统加载打赏记录
-func (a *App) loadSupportRecords(efs embed.FS) {
-	a.supportRecordsMu.Lock()
-	defer a.supportRecordsMu.Unlock()
-	a.supportRecords = make(map[string][]pkgapp.SupportRecord)
-
-	docsPath := "docs"
-	entries, err := fs.ReadDir(efs, docsPath)
-	if err != nil {
-		a.logger.Warn("Failed to read docs directory from embedded FS", zap.Error(err))
-		return
-	}
-
-	for _, entry := range entries {
-		name := entry.Name()
-		if !entry.IsDir() && strings.HasPrefix(name, "Support.") && strings.HasSuffix(name, ".json") {
-
-			// Extract language from Support.{lang}.json
-			// 从 Support.{lang}.json 提取语言
-			parts := strings.Split(name, ".")
-			if len(parts) < 3 {
-				continue
-			}
-			lang := strings.ToLower(parts[1])
-
-			data, err := efs.ReadFile(docsPath + "/" + name)
-			if err != nil {
-				a.logger.Warn("Failed to read support record file", zap.String("file", name), zap.Error(err))
-				continue
-			}
-
-			var records []pkgapp.SupportRecord
-			if err := json.Unmarshal(data, &records); err != nil {
-				a.logger.Warn("Failed to unmarshal support records", zap.String("file", name), zap.Error(err))
-				continue
-			}
-
-			a.supportRecords[lang] = records
-			a.logger.Debug("Loaded support records", zap.String("lang", lang), zap.Int("count", len(records)))
-		}
-	}
-
-}
-
-// GetSupportRecords gets all support records
-// GetSupportRecords 获取所有打赏记录
-func (a *App) GetSupportRecords() map[string][]pkgapp.SupportRecord {
-	a.supportRecordsMu.RLock()
-	defer a.supportRecordsMu.RUnlock()
-	return a.supportRecords
-}
-
-// getCNYValue gets support record amount converted to CNY for sorting
-// getCNYValue 将打赏记录金额折合为人民币价值用于排序
-func getCNYValue(amountStr, unit string) float64 {
-	amount, _ := strconv.ParseFloat(amountStr, 64)
-	unitUpper := strings.ToUpper(unit)
-	if unitUpper == "USD" || unitUpper == "$" {
-		return amount * 6.81 // 采用与 JS 统一的 6.81 汇率
-	}
-	return amount
-}
-
-// GetSupportRecordsPage gets support records with pagination and sorting
-// GetSupportRecordsPage 分页并排序获取打赏记录
-func (a *App) GetSupportRecordsPage(lang, sortBy, sortOrder string, page, pageSize int) ([]pkgapp.SupportRecord, int) {
-	a.supportRecordsMu.RLock()
-	defer a.supportRecordsMu.RUnlock()
-
-	lang = strings.ToLower(lang)
-	if lang == "" {
-		lang = "en"
-	}
-
-	records, ok := a.supportRecords[lang]
-	if !ok {
-		records = a.supportRecords["en"]
-	}
-
-	actualSortBy := sortBy
-	var filteredRecords []pkgapp.SupportRecord
-
-	if sortBy == "amount_3m" || sortBy == "amount_6m" {
-		actualSortBy = "amount"
-		threeMonthsAgo := time.Now().AddDate(0, -3, 0)
-		filteredRecords = make([]pkgapp.SupportRecord, 0, len(records))
-		for _, r := range records {
-			// Date format: 2026/03/27 00:36:52
-			t, err := time.Parse("2006/01/02 15:04:05", r.Time)
-			if err == nil && t.After(threeMonthsAgo) {
-				filteredRecords = append(filteredRecords, r)
-			}
-		}
-	} else {
-		filteredRecords = make([]pkgapp.SupportRecord, len(records))
-		copy(filteredRecords, records)
-	}
-
-	// Normalize USD to $ for display
-	for i := range filteredRecords {
-		if strings.ToUpper(filteredRecords[i].Unit) == "USD" {
-			filteredRecords[i].Unit = "$"
-		}
-	}
-
-	total := len(filteredRecords)
-	if total == 0 {
-		return []pkgapp.SupportRecord{}, 0
-	}
-
-	if actualSortBy != "" {
-		isDesc := strings.ToLower(sortOrder) == "desc"
-		sort.SliceStable(filteredRecords, func(i, j int) bool {
-			var less bool
-			switch actualSortBy {
-			case "amount":
-				valI := getCNYValue(filteredRecords[i].Amount, filteredRecords[i].Unit)
-				valJ := getCNYValue(filteredRecords[j].Amount, filteredRecords[j].Unit)
-				if valI == valJ {
-					return filteredRecords[i].Time > filteredRecords[j].Time
-				}
-				less = valI < valJ
-			case "name":
-				less = filteredRecords[i].Name < filteredRecords[j].Name
-			case "item":
-				less = filteredRecords[i].Item < filteredRecords[j].Item
-			case "time":
-				fallthrough
-			default:
-				less = filteredRecords[i].Time < filteredRecords[j].Time
-			}
-			if isDesc {
-				return !less
-			}
-			return less
-		})
-	}
-
-	offset := (page - 1) * pageSize
-	if offset < 0 {
-		offset = 0
-	}
-	if offset >= total {
-		return []pkgapp.SupportRecord{}, total
-	}
-
-	end := offset + pageSize
-	if end > total {
-		end = total
-	}
-
-	return filteredRecords[offset:end], total
-}
-
-// UpdateSupportRecords updates support records for a specific language
-// UpdateSupportRecords 更新特定语言的打赏记录
-func (a *App) UpdateSupportRecords(lang string, records []pkgapp.SupportRecord) {
-	if lang == "" {
-		return
-	}
-	lang = strings.ToLower(lang)
-	a.supportRecordsMu.Lock()
-	defer a.supportRecordsMu.Unlock()
-	if a.supportRecords == nil {
-		a.supportRecords = make(map[string][]pkgapp.SupportRecord)
-	}
-	a.supportRecords[lang] = records
-	a.logger.Debug("Updated support records via background task", zap.String("lang", lang), zap.Int("count", len(records)))
 }
 
 // TriggerUpgrade triggers the upgrade process

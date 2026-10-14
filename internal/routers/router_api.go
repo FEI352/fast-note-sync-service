@@ -72,7 +72,6 @@ func registerAPIRoutes(r *gin.Engine, appContainer *app.App, wss *pkgapp.Websock
 		// Add server version interface (no auth required)
 		// 添加服务端版本号接口（无需认证）
 		api.GET("/version", versionHandler.ServerVersion)
-		api.GET("/support", versionHandler.Support)
 
 		// Health check interface (no auth required)
 		// 健康检查接口（无需认证）

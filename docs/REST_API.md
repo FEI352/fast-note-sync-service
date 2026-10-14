@@ -1248,25 +1248,6 @@ Schema: `api_router.HealthResponse`
 
 ---
 
-### Get support records
-**Endpoint**: `GET /api/support`
-
-Get support records for the specified language with pagination and sorting
-
-**Parameters**:
-| Name | In | Type | Required | Description |
-|------|----|------|----------|-------------|
-| lang | query | string | - | Language code (default: en) |
-| sortBy | query | string | - | Sort by field (amount, time, name, item) |
-| sortOrder | query | string | - | Sort order (asc, desc) |
-| page | query | integer | - | Page number |
-| pageSize | query | integer | - | Page size |
-
-**Success Response (200)**:
-Schema: `app.Res`
-
----
-
 ### Get server version info
 **Endpoint**: `GET /api/version`
 
