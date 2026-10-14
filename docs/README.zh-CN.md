@@ -1,16 +1,15 @@
-[简体中文](https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/README.zh-CN.md) / [English](https://github.com/haierkeys/fast-note-sync-service/blob/master/README.md) / [日本語](https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/README.ja.md) / [한국어](https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/README.ko.md) / [繁體中文](https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/README.zh-TW.md)
+[简体中文](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/docs/README.zh-CN.md) / [English](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/README.md) / [日本語](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/docs/README.ja.md) / [한국어](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/docs/README.ko.md) / [繁體中文](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/docs/README.zh-TW.md)
 
-有问题请新建 [issue](https://github.com/haierkeys/fast-note-sync-service/issues/new) , 或加入电报交流群寻求帮助: [https://t.me/obsidian_users](https://t.me/obsidian_users)
+有问题请新建 [issue](https://github.com/liu-zhengdong/fast-note-sync-service/issues/new)。
 
-中国大陆地区，推荐使用腾讯 `cnb.cool` 镜像库: [https://cnb.cool/haierkeys/fast-note-sync-service](https://cnb.cool/haierkeys/fast-note-sync-service)
+本仓库 fork 自 [haierkeys/fast-note-sync-service](https://github.com/haierkeys/fast-note-sync-service)。上游已停止更新，本仓库独立开发。
 
 
 <h1 align="center">Fast Note Sync Service</h1>
 
 <p align="center">
-    <a href="https://github.com/haierkeys/fast-note-sync-service/releases"><img src="https://img.shields.io/github/release/haierkeys/fast-note-sync-service?style=flat-square" alt="release"></a>
-    <a href="https://github.com/haierkeys/fast-note-sync-service/releases"><img src="https://img.shields.io/github/v/tag/haierkeys/fast-note-sync-service?label=release-alpha&style=flat-square" alt="alpha-release"></a>
-    <a href="https://github.com/haierkeys/fast-note-sync-service/blob/master/LICENSE"><img src="https://img.shields.io/github/license/haierkeys/fast-note-sync-service?style=flat-square" alt="license"></a>
+    <a href="https://github.com/liu-zhengdong/fast-note-sync-service/releases"><img src="https://img.shields.io/github/release/liu-zhengdong/fast-note-sync-service?style=flat-square" alt="release"></a>
+    <a href="https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/LICENSE"><img src="https://img.shields.io/github/license/liu-zhengdong/fast-note-sync-service?style=flat-square" alt="license"></a>
     <img src="https://img.shields.io/badge/Language-Go-00ADD8?style=flat-square" alt="Go">
 </p>
 
@@ -21,7 +20,7 @@
 </p>
 
 <p align="center">
-  数据提供需配合客户端插件使用：<a href="https://github.com/haierkeys/obsidian-fast-note-sync">Obsidian Fast Note Sync Plugin</a>
+  数据提供需配合客户端插件使用：<a href="https://github.com/liu-zhengdong/obsidian-fast-note-sync">Obsidian Fast Note Sync Plugin</a>
 </p>
 
 <div align="center">
@@ -88,18 +87,6 @@
 
 * **🗄️ 多数据库支持**：
   * 原生支持 SQLite、MySQL、PostgreSQL 等多种主流数据库，满足从个人到团队的不同部署需求。
-
-## ☕ 赞助与支持
-
-- 如果觉得这个插件很有用，并且想要它继续开发，请在以下方式支持我:
-
-  | Ko-fi *非中国地区*                                                                               |    | 微信扫码打赏 *中国地区*                        |
-  |--------------------------------------------------------------------------------------------------|----|------------------------------------------------|
-  | [<img src="/docs/images/kofi.png" alt="BuyMeACoffee" height="150">](https://ko-fi.com/haierkeys) | 或 | <img src="/docs/images/wxds.png" height="150"> |
-
-  - 已支持名单：
-    - <a href="https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/Support.zh-CN.md">Support.zh-CN.md</a>
-    - <a href="https://cnb.cool/haierkeys/fast-note-sync-service/-/blob/master/docs/Support.zh-CN.md">Support.zh-CN.md (cnb.cool 镜像库)</a>
 
 ## ⏱️ 更新日志
 
@@ -188,7 +175,7 @@ docker compose up -d
 
 ### 方式三：手动二进制安装
 
-从 [Releases](https://github.com/haierkeys/fast-note-sync-service/releases) 下载对应系统的最新版本，解压后运行：
+从 [Releases](https://github.com/liu-zhengdong/fast-note-sync-service/releases) 下载对应系统的最新版本，解压后运行：
 
 ```bash
 ./fast-note-sync-service run -c config/config.yaml
@@ -210,11 +197,11 @@ docker compose up -d
 
 默认配置文件为 `config.yaml`，程序会自动在 **根目录** 或 **config/** 目录下查找。
 
-查看完整配置示例：[config/config.yaml](https://github.com/haierkeys/fast-note-sync-service/blob/master/config/config.yaml)
+查看完整配置示例：[config/config.yaml](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/config/config.yaml)
 
 ## 🌐 Nginx 反代配置示例
 
-查看完整配置示例：[https-nginx-example.conf](https://github.com/haierkeys/fast-note-sync-service/blob/master/scripts/https-nginx-example.conf)
+查看完整配置示例：[https-nginx-example.conf](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/scripts/https-nginx-example.conf)
 
 ## 🧰 MCP (模型上下文协议) 支持
 
@@ -300,7 +287,7 @@ SSE 模式为旧版传输协议，仍完整保留以保持向后兼容，适用�
 ## 🔗 客户端 & 客户端插件 & 协作项目
 
 * Obsidian Fast Note Sync 插件
-  * [Obsidian Fast Note Sync Plugin](https://github.com/haierkeys/obsidian-fast-note-sync) / [cnb.cool 镜像库](https://cnb.cool/haierkeys/obsidian-fast-note-sync)
+  * [Obsidian Fast Note Sync Plugin](https://github.com/liu-zhengdong/obsidian-fast-note-sync)
 * 三方客户端
   * [FastNodeSync-CLI ](https://github.com/Go1c/FastNodeSync-CLI) 一款基于 Python 和 FNS WebSocket 同步协议实现的双向实时同步的命令行客户端, 适用于无 GUI 的 Linux 服务器环境（如 OpenClaw），实现与 Obsidian 桌面/移动端等价的同步能力。
   * [go-fast-note-sync](https://github.com/erichll/go-fast-note-sync) 一款基于 Go 和 FNS WebSocket 同步协议的 Go CLI 后台同步守护进程，主要面向 Linux 无头（headless）环境，同时也支持 macOS 和 Windows。

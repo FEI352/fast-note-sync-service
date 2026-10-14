@@ -79,7 +79,7 @@ AI 通过 MCP 写笔记时，从第 4 步开始走同一条路：写入，然后
 
 | 文档 | 在哪 | 给谁 | 活的 / 冻结 | 谁维护 |
 |---|---|---|---|---|
-| 项目介绍 | [README.md](../../README.md)，以及 [简中](../README.zh-CN.md) · [繁中](../README.zh-TW.md) · [日](../README.ja.md) · [韩](../README.ko.md) | 用户 | 活的 | 上游 |
+| 项目介绍 | [README.md](../../README.md)，以及 [简中](../README.zh-CN.md) · [繁中](../README.zh-TW.md) · [日](../README.ja.md) · [韩](../README.ko.md) | 用户 | 活的 | 我 |
 | 更新日志 | [en](../CHANGELOG.en.md) · [简中](../CHANGELOG.zh-CN.md) · [繁中](../CHANGELOG.zh-TW.md) · [日](../CHANGELOG.ja.md) · [韩](../CHANGELOG.ko.md)；写法见 [CHANGELOG_GUIDELINE.md](../CHANGELOG_GUIDELINE.md) | 用户 | 活的 | 上游 |
 | 赞助名单 | [en](../Support.en.md) · [简中](../Support.zh-CN.md) · [繁中](../Support.zh-TW.md) · [日](../Support.ja.md) · [韩](../Support.ko.md) | 用户 | 活的 | 上游 |
 | REST 接口 | [REST_API.md](../REST_API.md)、[swagger.yaml](../swagger.yaml)、[API-EXTENSIONS.md](../API-EXTENSIONS.md)、[admin_config_api.md](../admin_config_api.md) | 接口调用方 | 活的 | 我 |

@@ -1,8 +1,8 @@
-[简体中文](https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/README.zh-CN.md) / [English](https://github.com/haierkeys/fast-note-sync-service/blob/master/README.md) / [日本語](https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/README.ja.md) / [한국어](https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/README.ko.md) / [繁體中文](https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/README.zh-TW.md)
+[简体中文](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/docs/README.zh-CN.md) / [English](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/README.md) / [日本語](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/docs/README.ja.md) / [한국어](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/docs/README.ko.md) / [繁體中文](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/docs/README.zh-TW.md)
 
-If you have any questions, please create an [issue](https://github.com/haierkeys/fast-note-sync-service/issues/new) or join our Telegram group for help: [https://t.me/obsidian_users](https://t.me/obsidian_users)
+If you have any questions, please create an [issue](https://github.com/liu-zhengdong/fast-note-sync-service/issues/new).
 
-For users in Mainland China, it is recommended to use the Tencent cnb.cool mirror repository: [https://cnb.cool/haierkeys/fast-note-sync-service](https://cnb.cool/haierkeys/fast-note-sync-service)
+This repository is forked from [haierkeys/fast-note-sync-service](https://github.com/haierkeys/fast-note-sync-service). The upstream is no longer maintained; this repository is developed independently.
 
 
 > Developers: the design guide for the whole system (service, plugin, web GUI) starts at [docs/atlas/README.md](docs/atlas/README.md).
@@ -10,9 +10,8 @@ For users in Mainland China, it is recommended to use the Tencent cnb.cool mirro
 <h1 align="center">Fast Note Sync Service</h1>
 
 <p align="center">
-    <a href="https://github.com/haierkeys/fast-note-sync-service/releases"><img src="https://img.shields.io/github/release/haierkeys/fast-note-sync-service?style=flat-square" alt="release"></a>
-    <a href="https://github.com/haierkeys/fast-note-sync-service/releases"><img src="https://img.shields.io/github/v/tag/haierkeys/fast-note-sync-service?label=release-alpha&style=flat-square" alt="alpha-release"></a>
-    <a href="https://github.com/haierkeys/fast-note-sync-service/blob/master/LICENSE"><img src="https://img.shields.io/github/license/haierkeys/fast-note-sync-service?style=flat-square" alt="license"></a>
+    <a href="https://github.com/liu-zhengdong/fast-note-sync-service/releases"><img src="https://img.shields.io/github/release/liu-zhengdong/fast-note-sync-service?style=flat-square" alt="release"></a>
+    <a href="https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/LICENSE"><img src="https://img.shields.io/github/license/liu-zhengdong/fast-note-sync-service?style=flat-square" alt="license"></a>
     <img src="https://img.shields.io/badge/Language-Go-00ADD8?style=flat-square" alt="Go">
 </p>
 
@@ -23,7 +22,7 @@ For users in Mainland China, it is recommended to use the Tencent cnb.cool mirro
 </p>
 
 <p align="center">
-  Data provisioning requires integration with the client plugin: <a href="https://github.com/haierkeys/obsidian-fast-note-sync">Obsidian Fast Note Sync Plugin</a>
+  Data provisioning requires integration with the client plugin: <a href="https://github.com/liu-zhengdong/obsidian-fast-note-sync">Obsidian Fast Note Sync Plugin</a>
 </p>
 
 <div align="center">
@@ -90,18 +89,6 @@ For users in Mainland China, it is recommended to use the Tencent cnb.cool mirro
 
 * **🗄️ Multi-Database Support**:
   * Native support for mainstream databases including SQLite, MySQL, and PostgreSQL, meeting deployment needs from individuals to teams.
-
-## ☕ Sponsorship and Support
-
-- If you find this plugin useful and want to support its ongoing development, please support me in the following ways:
-
-  | Ko-fi *Outside China*                                                                            |    | WeChat Pay *China*                             |
-  |--------------------------------------------------------------------------------------------------|----|------------------------------------------------|
-  | [<img src="/docs/images/kofi.png" alt="BuyMeACoffee" height="150">](https://ko-fi.com/haierkeys) | or | <img src="/docs/images/wxds.png" height="150"> |
-
-  - Sponsor List:
-    - <a href="https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/Support.en.md">Support.en.md</a>
-    - <a href="https://cnb.cool/haierkeys/fast-note-sync-service/-/blob/master/docs/Support.en.md">Support.en.md (cnb.cool mirror repository)</a>
 
 ## ⏱️ Changelog
 
@@ -190,7 +177,7 @@ docker compose up -d
 
 ### Method 3: Manual Binary Installation
 
-Download the latest version for your system from [Releases](https://github.com/haierkeys/fast-note-sync-service/releases), extract it, and run:
+Download the latest version for your system from [Releases](https://github.com/liu-zhengdong/fast-note-sync-service/releases), extract it, and run:
 
 ```bash
 ./fast-note-sync-service run -c config/config.yaml
@@ -212,11 +199,11 @@ Download the latest version for your system from [Releases](https://github.com/h
 
 The default configuration file is `config.yaml`. The application automatically searches in the **root directory** or the **config/** directory.
 
-View the complete configuration example: [config/config.yaml](https://github.com/haierkeys/fast-note-sync-service/blob/master/config/config.yaml)
+View the complete configuration example: [config/config.yaml](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/config/config.yaml)
 
 ## 🌐 Nginx Reverse Proxy Example
 
-View the complete configuration example: [https-nginx-example.conf](https://github.com/haierkeys/fast-note-sync-service/blob/master/scripts/https-nginx-example.conf)
+View the complete configuration example: [https-nginx-example.conf](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/scripts/https-nginx-example.conf)
 
 ## 🧰 MCP (Model Context Protocol) Support
 
@@ -302,7 +289,7 @@ SSE mode is the legacy transport protocol. It is fully retained to maintain back
 ## 🔗 Clients, Client Plugins & Collaboration Projects
 
 * Obsidian Fast Note Sync Plugin
-  * [Obsidian Fast Note Sync Plugin](https://github.com/haierkeys/obsidian-fast-note-sync) / [cnb.cool mirror repository](https://cnb.cool/haierkeys/obsidian-fast-note-sync)
+  * [Obsidian Fast Note Sync Plugin](https://github.com/liu-zhengdong/obsidian-fast-note-sync)
 * Third-Party Clients
   * [FastNodeSync-CLI](https://github.com/Go1c/FastNodeSync-CLI) A command-line client implemented in Python based on the FNS WebSocket synchronization protocol. It enables real-time, bi-directional sync, suitable for GUI-less Linux server environments (such as OpenClaw), providing the same sync capabilities as the Obsidian desktop and mobile clients.
   * [go-fast-note-sync](https://github.com/erichll/go-fast-note-sync) A Go CLI background synchronization daemon implemented in Go based on the FNS WebSocket sync protocol, primarily targetting headless Linux environments while also supporting macOS and Windows.

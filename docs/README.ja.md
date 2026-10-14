@@ -1,16 +1,15 @@
-[简体中文](https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/README.zh-CN.md) / [English](https://github.com/haierkeys/fast-note-sync-service/blob/master/README.md) / [日本語](https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/README.ja.md) / [한국어](https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/README.ko.md) / [繁體中文](https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/README.zh-TW.md)
+[简体中文](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/docs/README.zh-CN.md) / [English](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/README.md) / [日本語](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/docs/README.ja.md) / [한국어](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/docs/README.ko.md) / [繁體中文](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/docs/README.zh-TW.md)
 
-質問がある場合は [issue](https://github.com/haierkeys/fast-note-sync-service/issues/new) を作成するか、テレグラムグループに参加してヘルプを求めてください: [https://t.me/obsidian_users](https://t.me/obsidian_users)
+質問がある場合は [issue](https://github.com/liu-zhengdong/fast-note-sync-service/issues/new) を作成してください。
 
-中国本土のユーザーは、Tencent cnb.cool ミラーリポジトリの使用をお勧めします: [https://cnb.cool/haierkeys/fast-note-sync-service](https://cnb.cool/haierkeys/fast-note-sync-service)
+このリポジトリは [haierkeys/fast-note-sync-service](https://github.com/haierkeys/fast-note-sync-service) からフォークしたものです。上流はすでに更新を停止しており、このリポジトリは独立して開発されています。
 
 
 <h1 align="center">Fast Note Sync Service</h1>
 
 <p align="center">
-    <a href="https://github.com/haierkeys/fast-note-sync-service/releases"><img src="https://img.shields.io/github/release/haierkeys/fast-note-sync-service?style=flat-square" alt="release"></a>
-    <a href="https://github.com/haierkeys/fast-note-sync-service/releases"><img src="https://img.shields.io/github/v/tag/haierkeys/fast-note-sync-service?label=release-alpha&style=flat-square" alt="alpha-release"></a>
-    <a href="https://github.com/haierkeys/fast-note-sync-service/blob/master/LICENSE"><img src="https://img.shields.io/github/license/haierkeys/fast-note-sync-service?style=flat-square" alt="license"></a>
+    <a href="https://github.com/liu-zhengdong/fast-note-sync-service/releases"><img src="https://img.shields.io/github/release/liu-zhengdong/fast-note-sync-service?style=flat-square" alt="release"></a>
+    <a href="https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/LICENSE"><img src="https://img.shields.io/github/license/liu-zhengdong/fast-note-sync-service?style=flat-square" alt="license"></a>
     <img src="https://img.shields.io/badge/Language-Go-00ADD8?style=flat-square" alt="Go">
 </p>
 
@@ -21,7 +20,7 @@
 </p>
 
 <p align="center">
-  データ提供はクライアントプラグインと組み合わせる必要があります：<a href="https://github.com/haierkeys/obsidian-fast-note-sync">Obsidian Fast Note Sync Plugin</a>
+  データ提供はクライアントプラグインと組み合わせる必要があります：<a href="https://github.com/liu-zhengdong/obsidian-fast-note-sync">Obsidian Fast Note Sync Plugin</a>
 </p>
 
 <div align="center">
@@ -87,18 +86,6 @@
 
 * **🗄️ マルチデータベースサポート**:
   * SQLite、MySQL、PostgreSQLなどの主要データベースをネイティブサポートし、個人からチームまでのさまざまなデプロイ要件に対応します。
-
-## ☕ スポンサーとサポート
-
-- このプラグインが便利で、開発の継続をサポートしたい場合は、以下の方法で支援をお願いします:
-
-  | Ko-fi *中国以外の地域*                                                                          |    | WeChat Pay *中国国内*                          |
-  |--------------------------------------------------------------------------------------------------|----|------------------------------------------------|
-  | [<img src="/docs/images/kofi.png" alt="BuyMeACoffee" height="150">](https://ko-fi.com/haierkeys) | or | <img src="/docs/images/wxds.png" height="150"> |
-
-  - 支援者リスト：
-    - <a href="https://github.com/haierkeys/fast-note-sync-service/blob/master/docs/Support.ja.md">Support.ja.md</a>
-    - <a href="https://cnb.cool/haierkeys/fast-note-sync-service/-/blob/master/docs/Support.ja.md">Support.ja.md (cnb.cool ミラーリポジトリ)</a>
 
 ## ⏱️ 更新履歴
 
@@ -187,7 +174,7 @@ docker compose up -d
 
 ### 方法3：手動バイナリインストール
 
-[Releases](https://github.com/haierkeys/fast-note-sync-service/releases) から対応する系统的最新バージョンをダウンロードし、解凍して実行します：
+[Releases](https://github.com/liu-zhengdong/fast-note-sync-service/releases) から対応する系统的最新バージョンをダウンロードし、解凍して実行します：
 
 ```bash
 ./fast-note-sync-service run -c config/config.yaml
@@ -209,11 +196,11 @@ docker compose up -d
 
 デフォルトの設定ファイルは `config.yaml` です。プログラムは自動的に**ルートディレクトリ**または **config/** ディレクトリ内を検索します。
 
-完全な設定例を表示：[config/config.yaml](https://github.com/haierkeys/fast-note-sync-service/blob/master/config/config.yaml)
+完全な設定例を表示：[config/config.yaml](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/config/config.yaml)
 
 ## 🌐 Nginx リバースプロキシ設定例
 
-完全な設定例を表示：[https-nginx-example.conf](https://github.com/haierkeys/fast-note-sync-service/blob/master/scripts/https-nginx-example.conf)
+完全な設定例を表示：[https-nginx-example.conf](https://github.com/liu-zhengdong/fast-note-sync-service/blob/master/scripts/https-nginx-example.conf)
 
 ## 🧰 MCP (Model Context Protocol) サポート
 
@@ -297,7 +284,7 @@ SSEモードは従来の転送プロトコルです。後方互換性を維持�
 ## 🔗 クライアント ＆ クライアントプラグイン ＆ 共同プロジェクト
 
 * Obsidian Fast Note Sync プラグイン
-  * [Obsidian Fast Note Sync プラグイン](https://github.com/haierkeys/obsidian-fast-note-sync) / [cnb.cool ミラーリポジトリ](https://cnb.cool/haierkeys/obsidian-fast-note-sync)
+  * [Obsidian Fast Note Sync プラグイン](https://github.com/liu-zhengdong/obsidian-fast-note-sync)
 * サードパーティ製クライアント
   * [FastNodeSync-CLI](https://github.com/Go1c/FastNodeSync-CLI) PythonおよびFNS WebSocket同期プロトコルに基づき実装された、双方向リアルタイム同期のコマンドラインクライアント。GUIのないLinuxサーバー環境（OpenClawなど）に適しており、Obsidianデスクトップ/モバイル端と同等の同期機能を実現します。
   * [go-fast-note-sync](https://github.com/erichll/go-fast-note-sync) GoおよびFNS WebSocket同期プロトコルに基づいたGo CLIバックグラウンド同期デーモン。主にLinuxヘッドレス環境向けであり、macOSとWindowsもサポートしています。
