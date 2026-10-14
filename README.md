@@ -5,6 +5,8 @@ If you have any questions, please create an [issue](https://github.com/haierkeys
 For users in Mainland China, it is recommended to use the Tencent cnb.cool mirror repository: [https://cnb.cool/haierkeys/fast-note-sync-service](https://cnb.cool/haierkeys/fast-note-sync-service)
 
 
+> Developers: the design guide for the whole system (service, plugin, web GUI) starts at [docs/atlas/README.md](docs/atlas/README.md).
+
 <h1 align="center">Fast Note Sync Service</h1>
 
 <p align="center">
