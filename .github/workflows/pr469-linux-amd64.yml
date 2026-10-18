@@ -1,0 +1,53 @@
+name: PR469 Linux amd64
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Prove regressions fail against exact deployed baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=7a6c78792c631f999c8a5f725bba5dd7235d6688
+          git checkout "$base" -- internal/middleware/404nofound.go internal/routers/mcp_router/tool_metadata.go
+          for spec in './internal/middleware TestNoFoundReturnsHTTPNotFound' './internal/routers/mcp_router TestToolMetadataOmitsSecuritySchemesWhenOAuthDisabled' './internal/routers TestOAuthMetadataRoutes_Disabled'; do
+            read -r package test <<< "$spec"
+            if go test "$package" -run "^${test}$" -count=1 -v > regression.log 2>&1; then
+              cat regression.log
+              exit 1
+            fi
+            cat regression.log
+            grep -F -- "--- FAIL: $test" regression.log
+          done
+          git checkout HEAD -- internal/middleware/404nofound.go internal/routers/mcp_router/tool_metadata.go
+      - name: Patched regression tests
+        run: go test ./internal/middleware ./internal/routers/mcp_router ./internal/routers -count=1 -v
+      - name: Official test target
+        run: make test
+      - name: Build using official Makefile
+        run: make build-linux-amd64 GitTag=3.6.1-pr469
+      - name: Package binary and SHA256
+        run: |
+          mkdir -p dist
+          build/linux_amd64/fast-note-sync-service version
+          tar -czf dist/fast-note-sync-service-linux-amd64.tar.gz -C build/linux_amd64 fast-note-sync-service
+          cd dist
+          sha256sum fast-note-sync-service-linux-amd64.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fast-note-pr469-linux-amd64
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
