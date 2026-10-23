@@ -39,6 +39,7 @@ type AppConfig struct {
 	OAuth            config.OAuthConfig            `yaml:"oauth"`
 	OIDC             config.OIDCConfig             `yaml:"oidc"`
 	AttachmentStatic config.AttachmentStaticConfig `yaml:"attachment-static"` // Attachment static access configuration // 附件模拟静态访问配置
+	AttachmentCDN    config.AttachmentCDNConfig    `yaml:"attachment-cdn"`    // Attachment CDN offload configuration // 附件 CDN 分流配置
 }
 
 // LoadConfig loads configuration from file

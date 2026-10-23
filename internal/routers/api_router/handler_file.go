@@ -126,6 +126,12 @@ func (h *FileHandler) GetInfo(c *gin.Context) {
 		return
 	}
 
+	// Redirect to CDN when the attachment is already mirrored to object storage
+	// 附件已镜像到对象存储时，302 跳转到 CDN，避免占用服务器带宽
+	if !params.IsRecycle && TryAttachmentCDNRedirect(c, h.App, uid, savePath, fileName, etag, mtime) {
+		return
+	}
+
 	// Open file for zero-copy serving
 	file, err := os.Open(savePath)
 	if err != nil {
