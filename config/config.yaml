@@ -525,3 +525,55 @@ attachment-static:
     # - ".jpeg"
     # - ".gif"
     # - ".pdf"
+
+# 附件 CDN 分流（兼容 S3 的对象存储，如缤纷云 S4）
+# Attachment CDN offload (S3-compatible object storage, e.g. Bitiful S4)
+# 开启后：附件同步到服务器后会在后台上传一份到对象存储；插件「附件云预览」请求 /api/file 时，
+# 服务器只返回 302 跳转到 CDN 地址，附件数据不再经过服务器带宽。尚未上传的附件仍由服务器返回，并自动补传。
+# When enabled, synced attachments are mirrored to object storage in the background, and preview
+# requests to /api/file are redirected (302) to the CDN. Not-yet-uploaded files are served locally and queued.
+attachment-cdn:
+  is-enable: false
+  # S3 API 地址 / S3 API endpoint
+  endpoint: "https://s3.bitiful.net"
+  region: "cn-east-1"
+  bucket-name: ""
+  access-key-id: ""
+  access-key-secret: ""
+  # 是否使用路径风格（endpoint/bucket/key）/ Use path-style addressing
+  use-path-style: true
+  # 访问附件用的 CDN 域名（绑定到该存储桶）/ CDN domain bound to the bucket
+  cdn-domain: "https://cdn.example.com"
+  # 对象路径前缀 / Object key prefix
+  path-prefix: "fns-attachments"
+  # 生成对象名的密钥，留空则使用 security.auth-token-key；修改后已上传的对象会失效并重新上传
+  # Secret for object key generation; defaults to security.auth-token-key. Changing it re-uploads everything.
+  key-secret: ""
+  # 需要分流的后缀，留空表示全部附件 / Extensions to offload, empty = all attachments
+  allowed-exts:
+    - ".png"
+    - ".jpg"
+    - ".jpeg"
+    - ".gif"
+    - ".webp"
+    - ".svg"
+    - ".bmp"
+    - ".avif"
+    - ".mp4"
+    - ".webm"
+    - ".mov"
+    - ".mp3"
+    - ".m4a"
+    - ".wav"
+    - ".ogg"
+    - ".flac"
+    - ".pdf"
+  # 小于该字节数的附件仍由服务器直接返回（0 表示不限制）/ Files smaller than this are served locally (0 = no limit)
+  min-size: 0
+  # 后台上传并发数（服务器上行带宽小时建议 1）/ Upload workers (1 recommended for small uplinks)
+  upload-concurrency: 1
+  upload-queue-size: 10000
+  # 上传失败后重试间隔 / Retry interval after a failed upload
+  retry-interval: "5m"
+  # 302 跳转响应的客户端缓存秒数 / Client cache seconds of the 302 response
+  redirect-cache-seconds: 60

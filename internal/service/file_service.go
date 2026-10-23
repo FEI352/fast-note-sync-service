@@ -128,6 +128,33 @@ type fileService struct {
 	backupService  BackupService          // Backup service // 备份服务
 	gitSyncService GitSyncService         // Git sync service // Git 同步服务
 	countTimers    *sync.Map              // Timers for CountSizeSum debounce // CountSizeSum 防抖计时器
+	cdnService     AttachmentCDNService   // Attachment CDN offload service (optional) // 附件 CDN 分流服务（可选）
+}
+
+// SetAttachmentCDNService sets the attachment CDN offload service
+// SetAttachmentCDNService 设置附件 CDN 分流服务
+func (s *fileService) SetAttachmentCDNService(cdn AttachmentCDNService) {
+	s.cdnService = cdn
+}
+
+// notifyCDN schedules mirroring of a freshly written attachment to the CDN bucket
+// notifyCDN 安排将刚写入的附件镜像到 CDN 存储桶
+func (s *fileService) notifyCDN(uid int64, f *domain.File) {
+	if s.cdnService == nil || f == nil || !s.cdnService.Enabled() {
+		return
+	}
+	etag := f.ContentHash
+	if etag == "" {
+		etag = f.PathHash
+	}
+	s.cdnService.Enqueue(AttachmentObject{
+		UID:      uid,
+		SavePath: f.SavePath,
+		Path:     f.Path,
+		ETag:     etag,
+		Mtime:    f.Mtime,
+		Size:     f.Size,
+	})
 }
 
 // NewFileService creates FileService instance
@@ -329,6 +356,7 @@ func (s *fileService) UpdateOrCreate(ctx context.Context, uid int64, params *dto
 				s.syncLogService.Log(uid, vaultID, domain.SyncLogTypeFile, domain.SyncLogActionModify, "content,mtime", updated.Path, updated.PathHash, s.clientType, s.clientName, s.clientVer, updated.Size)
 			}
 
+			s.notifyCDN(uid, updated)
 			go s.CountSizeSum(context.Background(), vaultID, uid)
 			safego.Go(zap.L(), func() {
 				s.folderService.SyncResourceFID(context.Background(), uid, vaultID, nil, []int64{updated.ID})
@@ -366,6 +394,7 @@ func (s *fileService) UpdateOrCreate(ctx context.Context, uid int64, params *dto
 			s.syncLogService.Log(uid, vaultID, domain.SyncLogTypeFile, domain.SyncLogActionCreate, "", created.Path, created.PathHash, s.clientType, s.clientName, s.clientVer, created.Size)
 		}
 
+		s.notifyCDN(uid, created)
 		go s.CountSizeSum(context.Background(), vaultID, uid)
 		safego.Go(zap.L(), func() {
 			s.folderService.SyncResourceFID(context.Background(), uid, vaultID, nil, []int64{created.ID})
@@ -953,6 +982,7 @@ func (s *fileService) WithClient(clientType, name, version string) FileService {
 		backupService:  s.backupService,
 		gitSyncService: s.gitSyncService,
 		countTimers:    s.countTimers, // Share the same timer map // 共享同一个计时器 map
+		cdnService:     s.cdnService,
 	}
 }
 

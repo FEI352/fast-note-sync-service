@@ -17,6 +17,7 @@ import (
 	"github.com/haierkeys/fast-note-sync-service/internal/app"
 	"github.com/haierkeys/fast-note-sync-service/internal/dto"
 	"github.com/haierkeys/fast-note-sync-service/internal/middleware"
+	"github.com/haierkeys/fast-note-sync-service/internal/routers/api_router"
 	"github.com/haierkeys/fast-note-sync-service/pkg/util"
 )
 
@@ -140,6 +141,12 @@ func registerStaticFiles(r *gin.Engine, frontendFiles embed.FS, appContainer *ap
 		savePath, contentType, mtime, etag, fileName, err := fileSvc.GetContentInfo(ctx, uid, params)
 		if err != nil {
 			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+
+		// Redirect to CDN when the attachment is already mirrored to object storage
+		// 附件已镜像到对象存储时，302 跳转到 CDN
+		if api_router.TryAttachmentCDNRedirect(c, appContainer, uid, savePath, fileName, etag, mtime) {
 			return
 		}
 

@@ -648,7 +648,13 @@ func (a *App) Shutdown(ctx context.Context) error {
 		}
 	}
 
-
+	// 0.15 Shutdown AttachmentCDN upload workers
+	// 0.15 关闭附件 CDN 上传协程
+	if a.AttachmentCDN != nil {
+		if err := a.AttachmentCDN.Stop(ctx); err != nil {
+			a.logger.Warn("Attachment cdn shutdown error", zap.Error(err))
+		}
+	}
 
 	// 0.2 Shutdown CloudflareService
 	if a.CloudflareService != nil {

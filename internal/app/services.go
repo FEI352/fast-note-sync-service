@@ -22,6 +22,7 @@ type Services struct {
 	BackupService      service.BackupService
 	GitSyncService     service.GitSyncService
 	CloudflareService  service.CloudflareService
+	AttachmentCDN      service.AttachmentCDNService
 	SyncLogService     service.SyncLogService
 	OIDCService        service.OIDCService
 }
@@ -87,6 +88,15 @@ func initServices(cfg *AppConfig, infra *Infra, repos *Repositories, logger *zap
 	s.ShareService = service.NewShareService(repos.ShareRepo, infra.TokenManager, repos.NoteRepo, repos.FileRepo, repos.VaultRepo, logger, svcConfig)
 	s.NoteLinkService = service.NewNoteLinkService(repos.NoteLinkRepo, repos.NoteRepo, s.VaultService)
 	s.CloudflareService = service.NewCloudflareService(logger)
+
+	// Attachment CDN offload: mirror attachments to S3-compatible storage and redirect previews to CDN
+	// 附件 CDN 分流：将附件镜像到兼容 S3 的对象存储，并将预览请求跳转到 CDN
+	s.AttachmentCDN = service.NewAttachmentCDNService(&cfg.AttachmentCDN, cfg.Security.AuthTokenKey, logger)
+	if setter, ok := s.FileService.(interface {
+		SetAttachmentCDNService(service.AttachmentCDNService)
+	}); ok {
+		setter.SetAttachmentCDNService(s.AttachmentCDN)
+	}
 
 	return s
 }
