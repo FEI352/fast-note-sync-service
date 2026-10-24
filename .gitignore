@@ -84,6 +84,8 @@ Icon
 /storage/
 /config/config-dev.yaml
 /config/lastVersion
+# 本地部署配置（含随机生成的密钥），不应提交
+/config-local/
 
 docs/*_打赏 链接小票单记录*.csv
 # Claude Code

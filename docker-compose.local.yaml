@@ -1,0 +1,16 @@
+# 本地构建部署：前端产物更新到 frontend/ 后，依次执行
+#   CGO_ENABLED=0 go build -ldflags '-s -w' -o build/linux_amd64/fast-note-sync-service .
+#   docker build -f docker/Dockerfile -t fast-note-sync-service:local --build-arg TARGETOS=linux --build-arg TARGETARCH=amd64 --build-arg VERSION=local .
+#   docker compose -f docker-compose.local.yaml up -d --force-recreate
+services:
+  fast-note-sync-service:
+    image: fast-note-sync-service:local
+    container_name: fast-note-sync-service
+    restart: unless-stopped
+    ports:
+      # REST API / WebSocket / WebGUI
+      - "${HOST_PORT:-9000}:9000"
+    volumes:
+      - ./storage:/fast-note-sync/storage
+      # 本地配置（由 config/config.yaml 复制而来，已替换默认密钥）
+      - ./config-local:/fast-note-sync/config
